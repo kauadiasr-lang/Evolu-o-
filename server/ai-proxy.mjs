@@ -2,12 +2,14 @@
 //   ANTHROPIC_API_KEY=... npm run ai-proxy      (porta 8787; o Vite encaminha /api -> 8787)
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
-import { SYSTEM, buildPrompt } from './prompts.mjs';
+import { SYSTEM, buildPrompt, MODES } from './prompts.mjs';
+import { complete, resolveConfig } from './providers.mjs';
 
 export function createHandler({ env = process.env, fetchImpl = fetch, now = () => Date.now() } = {}) {
   const cache = new Map();
   const calls = [];
-  const model = env.EVOLVERE_AI_MODEL || 'claude-sonnet-5-5';
+  const cfg = resolveConfig(env);
+  const configured = () => !!cfg.apiKey || cfg.keyOptional;
   const TTL = 30 * 60 * 1000;
   const MAX_PER_MIN = Number(env.EVOLVERE_AI_RPM || 12);
 
@@ -19,10 +21,10 @@ export function createHandler({ env = process.env, fetchImpl = fetch, now = () =
   return async function handler(req, res) {
     const url = new URL(req.url, 'http://localhost');
     if (req.method === 'GET' && url.pathname === '/api/ai/status') {
-      return json(res, 200, { configured: !!env.ANTHROPIC_API_KEY, model });
+      return json(res, 200, { configured: configured(), provider: cfg.provider, model: cfg.model });
     }
     if (req.method !== 'POST' || url.pathname !== '/api/ai') return json(res, 404, { error: 'não encontrado' });
-    if (!env.ANTHROPIC_API_KEY) return json(res, 503, { error: 'IA não configurada (defina ANTHROPIC_API_KEY no backend).' });
+    if (!configured()) return json(res, 503, { error: 'IA não configurada (defina a chave do provedor no backend).' });
 
     let body = '';
     for await (const chunk of req) {
@@ -36,7 +38,7 @@ export function createHandler({ env = process.env, fetchImpl = fetch, now = () =
       return json(res, 400, { error: 'JSON inválido' });
     }
     const { mode, digest, question } = data;
-    if (!['chronicle', 'ask', 'hypotheses'].includes(mode) || typeof digest !== 'object' || digest === null) return json(res, 400, { error: 'requisição inválida' });
+    if (!MODES.includes(mode) || typeof digest !== 'object' || digest === null) return json(res, 400, { error: 'requisição inválida' });
 
     const key = createHash('sha256').update(JSON.stringify([mode, digest, question ?? ''])).digest('hex');
     const hit = cache.get(key);
@@ -48,18 +50,12 @@ export function createHandler({ env = process.env, fetchImpl = fetch, now = () =
     calls.push(t);
 
     try {
-      const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model, max_tokens: 900, system: SYSTEM, messages: [{ role: 'user', content: buildPrompt(mode, digest, question) }] }),
-      });
-      if (!r.ok) return json(res, 502, { error: `falha no provedor de IA (${r.status})` });
-      const j = await r.json();
-      const text = (j.content ?? []).filter((c) => c.type === 'text').map((c) => c.text).join('\n').trim();
-      cache.set(key, { t: now(), text });
-      return json(res, 200, { text });
-    } catch {
-      return json(res, 502, { error: 'IA indisponível' });
+      const t0 = now();
+      const out = await complete(cfg, { system: SYSTEM, user: buildPrompt(mode, digest, question), maxTokens: mode === 'events' ? 1100 : 900 }, fetchImpl);
+      cache.set(key, { t: now(), text: out.text });
+      return json(res, 200, { text: out.text, provider: cfg.provider, model: out.model, ms: now() - t0 });
+    } catch (e) {
+      return json(res, 502, { error: e?.status ? `falha no provedor de IA (${e.status})` : 'IA indisponível' });
     }
   };
 }
@@ -67,6 +63,6 @@ export function createHandler({ env = process.env, fetchImpl = fetch, now = () =
 if (import.meta.url === `file://${process.argv[1]}`) {
   const port = Number(process.env.PORT || 8787);
   createServer(createHandler()).listen(port, '127.0.0.1', () => {
-    console.log(`EVOLVERE AI proxy em http://127.0.0.1:${port}  (chave ${process.env.ANTHROPIC_API_KEY ? 'configurada' : 'AUSENTE — a IA ficará desligada'})`);
+    console.log(`EVOLVERE AI proxy em http://127.0.0.1:${port}  (${(() => { const c = resolveConfig(process.env); return `${c.provider}/${c.model}, chave ${c.apiKey || c.keyOptional ? 'configurada' : 'AUSENTE — a IA ficará desligada'}`; })()})`);
   });
 }

@@ -5,10 +5,19 @@ import { Simulation } from './simulation';
  * A IA nunca altera o mundo diretamente: suas sugestões passam por este validador
  * e só viram ação se o motor considerar o pedido permitido e coerente com o estado real.
  */
-export type Suggestion =
+/** Metadados narrativos opcionais: nunca influenciam a física. */
+export interface SuggestionMeta {
+  title?: string;
+  narrative?: string;
+  rationale?: string;
+}
+export type Suggestion = (
   | { type: 'climate_shift'; deltaT: number }
   | { type: 'eruption'; x: number; y: number; amount: number }
-  | { type: 'adaptation'; speciesId: number; gene: string; delta: number; individuals?: number };
+  | { type: 'nutrient_upwelling'; x: number; y: number; radius?: number; amount: number }
+  | { type: 'adaptation'; speciesId: number; gene: string; delta: number; individuals?: number }
+) &
+  SuggestionMeta;
 
 export interface Verdict {
   ok: boolean;
@@ -32,6 +41,15 @@ export function validateSuggestion(sim: Simulation, s: Suggestion): Verdict {
       if (s.amount > pl.reservoir * 0.5) return { ok: false, reason: 'Não há massa mineral suficiente no reservatório.' };
       return { ok: true, reason: 'Pressão geológica e profundidade compatíveis com uma erupção.' };
     }
+    case 'nutrient_upwelling': {
+      if (![s.x, s.y, s.amount].every(Number.isFinite)) return { ok: false, reason: 'Parâmetros inválidos.' };
+      if (s.x < 0 || s.y < 0 || s.x >= pl.w || s.y >= pl.h) return { ok: false, reason: 'Coordenadas fora do planeta.' };
+      const r = s.radius ?? 4;
+      if (r < 1 || r > 8) return { ok: false, reason: 'O raio da ressurgência deve estar entre 1 e 8.' };
+      if (s.amount <= 0 || s.amount > 150) return { ok: false, reason: 'A quantidade deve estar entre 0 e 150.' };
+      if (s.amount > pl.reservoir * 0.3) return { ok: false, reason: 'O sedimento disponível não sustenta essa liberação (máx. 30% do reservatório).' };
+      return { ok: true, reason: 'Redistribuição de nutrientes a partir do sedimento (massa conservada).' };
+    }
     case 'adaptation': {
       const sp = sim.species.list[s.speciesId - 1];
       if (!sp || sp.extinctTick >= 0) return { ok: false, reason: 'A espécie não existe ou está extinta.' };
@@ -52,6 +70,7 @@ export function applySuggestion(sim: Simulation, s: Suggestion): Verdict {
   if (!v.ok) return v;
   if (s.type === 'climate_shift') sim.setClimate(sim.planet.climateTarget + s.deltaT);
   else if (s.type === 'eruption') sim.eruption(s.x, s.y, 4, s.amount);
+  else if (s.type === 'nutrient_upwelling') sim.upwelling(s.x, s.y, Math.round(s.radius ?? 4), s.amount);
   else if (s.type === 'adaptation') {
     const gi = GENE_INFO.findIndex((g) => g.key === s.gene);
     sim.introduceVariant(s.speciesId, gi, s.delta, Math.min(5, s.individuals ?? 3));

@@ -5,7 +5,7 @@ import type { Chronicle } from '../ai/chronicler';
 import { LAYER_INFO, type LayerKind } from '../core/layers';
 import type { PaintMode } from '../core/simulation';
 import { drawLines, drawTree, drawWeb, fmt, hitTest, type Hit, type SeriesDef } from '../render/charts';
-import { MapRenderer, rampCss } from '../render/mapRenderer';
+import { MapRenderer, QUALITY, rampCss, type QualityLevel } from '../render/mapRenderer';
 import type { CellInfo, InspectInfo, StatsPayload } from '../worker/protocol';
 import { drawPortrait, ecoHtml, esc, eventsHtml, inspectHtml, speciesDetailHtml, speciesListHtml } from './panels';
 import { SimClient } from './simClient';
@@ -53,8 +53,12 @@ SPEEDS.forEach((s) => {
   b.onclick = () => setSpeed(s);
   speedsEl.appendChild(b);
 });
+const speedSel = $('speed-sel') as HTMLSelectElement;
+speedSel.innerHTML = SPEEDS.map((s) => `<option value="${s}">${s < 1 ? '½×' : s + '×'}</option>`).join('');
+speedSel.onchange = () => setSpeed(Number(speedSel.value));
 function setSpeed(s: number) {
   speed = s;
+  speedSel.value = String(s);
   if (paused) togglePause(false);
   else client.send({ t: 'speed', speed });
   speedsEl.querySelectorAll('button').forEach((b) => b.classList.toggle('on', Number((b as HTMLElement).dataset.s) === speed));
@@ -139,61 +143,120 @@ $('z-in').onclick = () => renderer.zoomAt(canvas.clientWidth / 2, canvas.clientH
 $('z-out').onclick = () => renderer.zoomAt(canvas.clientWidth / 2, canvas.clientHeight / 2, 1 / 1.4);
 $('z-fit').onclick = () => renderer.fit();
 
-// ------------------------------------------------------------------ mapa: interação
+// ------------------------------------------------------------------ mapa: interação (mouse, toque, pinça)
+const pointers = new Map<number, { x: number; y: number }>();
 let dragging = false;
 let moved = false;
-let last = { x: 0, y: 0 };
+let brushing = false;
+let downAt = 0;
+let downPos = { x: 0, y: 0 };
+let pinch: { dist: number; cx: number; cy: number } | null = null;
 let hoverTimer = 0;
+let tipTimer = 0;
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+const rel = (e: PointerEvent) => {
+  const r = canvas.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+};
+const pinchState = () => {
+  const [a, b] = [...pointers.values()];
+  return { dist: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
+};
+
 canvas.addEventListener('pointerdown', (e) => {
   canvas.setPointerCapture(e.pointerId);
-  const r = canvas.getBoundingClientRect();
-  last = { x: e.clientX, y: e.clientY };
+  const p = rel(e);
+  pointers.set(e.pointerId, p);
+  if (pointers.size === 2) {
+    // segundo dedo: vira gesto de pinça/pan e cancela pincel e toque
+    pinch = pinchState();
+    dragging = false;
+    brushing = false;
+    moved = true;
+    return;
+  }
+  downAt = performance.now();
+  downPos = p;
   moved = false;
   if (tool === 'observe' || e.button === 2) {
     dragging = true;
     canvas.classList.add('drag');
   } else {
-    applyBrush(e.clientX - r.left, e.clientY - r.top, true);
-    dragging = false;
+    applyBrush(p.x, p.y, true);
     brushing = true;
   }
 });
-let brushing = false;
+
 canvas.addEventListener('pointermove', (e) => {
-  const r = canvas.getBoundingClientRect();
-  const sx = e.clientX - r.left, sy = e.clientY - r.top;
-  renderer.pointer = { x: sx, y: sy, inside: true };
-  const [wx, wy] = renderer.screenToWorld(sx, sy);
-  renderer.hoverCell = wy >= 0 && wy < renderer.h ? { x: Math.floor(((wx % renderer.w) + renderer.w) % renderer.w), y: Math.floor(wy) } : null;
-  if (dragging) {
-    const dx = e.clientX - last.x, dy = e.clientY - last.y;
-    if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
+  const p = rel(e);
+  const prev = pointers.get(e.pointerId);
+  if (prev) pointers.set(e.pointerId, p);
+  if (e.pointerType === 'mouse') {
+    renderer.pointer = { x: p.x, y: p.y, inside: true };
+    renderer.dirty = true;
+    const [wx, wy] = renderer.screenToWorld(p.x, p.y);
+    renderer.hoverCell = wy >= 0 && wy < renderer.h ? { x: Math.floor(((wx % renderer.w) + renderer.w) % renderer.w), y: Math.floor(wy) } : null;
+  }
+  if (pointers.size >= 2 && pinch) {
+    const n = pinchState();
+    if (pinch.dist > 8) renderer.zoomAt(n.cx, n.cy, n.dist / pinch.dist);
+    renderer.pan(n.cx - pinch.cx, n.cy - pinch.cy);
+    pinch = n;
+    return;
+  }
+  if (dragging && prev) {
+    const dx = p.x - prev.x, dy = p.y - prev.y;
+    if (Math.hypot(p.x - downPos.x, p.y - downPos.y) > 8) moved = true;
     renderer.pan(dx, dy);
-    last = { x: e.clientX, y: e.clientY };
   } else if (brushing && e.buttons) {
-    applyBrush(sx, sy, false);
-  } else if (!hoverTimer && renderer.hoverCell) {
+    if (Math.hypot(p.x - downPos.x, p.y - downPos.y) > 8) moved = true;
+    applyBrush(p.x, p.y, false);
+  } else if (e.pointerType === 'mouse' && !hoverTimer && renderer.hoverCell) {
     hoverTimer = window.setTimeout(() => {
       hoverTimer = 0;
       if (renderer.hoverCell) client.send({ t: 'cell', x: renderer.hoverCell.x + 0.5, y: renderer.hoverCell.y + 0.5 });
     }, 120);
   }
-  if (!renderer.hoverCell) $('tip').hidden = true;
+  if (e.pointerType === 'mouse' && !renderer.hoverCell) $('tip').hidden = true;
 });
-canvas.addEventListener('pointerup', (e) => {
-  const r = canvas.getBoundingClientRect();
-  if (dragging && !moved && tool === 'observe' && e.button === 0) {
-    const [wx, wy] = renderer.screenToWorld(e.clientX - r.left, e.clientY - r.top);
-    client.send({ t: 'inspect', x: ((wx % renderer.w) + renderer.w) % renderer.w, y: wy });
+
+function endPointer(e: PointerEvent, cancelled = false) {
+  const p = rel(e);
+  const wasTap = !cancelled && !moved && pointers.size === 1 && performance.now() - downAt < 600;
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinch = null;
+  if (wasTap && dragging && tool === 'observe' && e.button <= 0) {
+    // toque/clique simples: seleciona o organismo mais próximo (tolerância ~22 px, adequada a dedos)
+    const [wx, wy] = renderer.screenToWorld(p.x, p.y);
+    if (wy < 0 || wy >= renderer.h) return finishPointer(); // toque fora do planeta: ignora
+    tapWorld = { x: ((wx % renderer.w) + renderer.w) % renderer.w, y: wy };
+    client.send({ t: 'inspect', x: tapWorld.x, y: tapWorld.y, r: Math.max(0.6, (e.pointerType === 'mouse' ? 14 : 24) / renderer.zoom) });
   }
-  dragging = false;
-  brushing = false;
-  canvas.classList.remove('drag');
-});
-canvas.addEventListener('pointerleave', () => {
-  renderer.pointer.inside = false;
-  $('tip').hidden = true;
+  finishPointer();
+}
+function finishPointer() {
+  if (pointers.size === 0) {
+    dragging = false;
+    brushing = false;
+    canvas.classList.remove('drag');
+  } else if (pointers.size === 1) {
+    // sobrou um dedo após a pinça: evita saltos
+    const [only] = pointers.values();
+    downPos = only;
+    moved = true;
+  }
+}
+let tapWorld: { x: number; y: number } | null = null;
+let pendingTapTip: { x: number; y: number } | null = null;
+canvas.addEventListener('pointerup', (e) => endPointer(e));
+canvas.addEventListener('pointercancel', (e) => endPointer(e, true));
+canvas.addEventListener('pointerleave', (e) => {
+  if (e.pointerType === 'mouse') {
+    renderer.pointer.inside = false;
+    renderer.dirty = true;
+    $('tip').hidden = true;
+  }
 });
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
@@ -213,20 +276,34 @@ function applyBrush(sx: number, sy: number, first: boolean) {
 
 client.onCell = (c: CellInfo) => {
   const tip = $('tip');
-  if (!renderer.hoverCell || renderer.hoverCell.x !== c.x || renderer.hoverCell.y !== c.y) return;
-  const r = renderer.pointer;
+  const byTap = pendingTapTip && Math.floor(pendingTapTip.x) === c.x && Math.floor(pendingTapTip.y) === c.y;
+  if (!byTap && (!renderer.hoverCell || renderer.hoverCell.x !== c.x || renderer.hoverCell.y !== c.y)) return;
+  const [tx, ty] = renderer.worldToScreen(c.x + 0.5, c.y + 0.5);
+  const r = byTap ? { x: tx, y: ty } : renderer.pointer;
   tip.hidden = false;
+  if (byTap) {
+    clearTimeout(tipTimer);
+    tipTimer = window.setTimeout(() => (tip.hidden = true), 4500);
+    pendingTapTip = null;
+  }
   tip.innerHTML = `<b>Célula ${c.x},${c.y}</b><br><span class="k">Temperatura</span><span class="mono">${c.temp.toFixed(1)} °C</span><br><span class="k">Luz</span><span class="mono">${c.light.toFixed(2)}</span><br><span class="k">Profundidade</span><span class="mono">${(c.depth * 100).toFixed(0)}%</span><br><span class="k">Nutrientes</span><span class="mono">${c.nutrient.toFixed(1)}</span><br><span class="k">Detritos</span><span class="mono">${c.detritus.toFixed(2)}</span><br><span class="k">Organismos</span><span class="mono">${c.count} (biomassa ${c.biomass.toFixed(1)})</span>${c.top.map((t) => `<br><i>${esc(t.name)}</i> <span class="mono">×${t.n}</span>`).join('')}`;
   tip.style.left = Math.min(canvas.clientWidth - 220, r.x + 16) + 'px';
   tip.style.top = Math.min(canvas.clientHeight - 180, r.y + 16) + 'px';
 };
 
 client.onInspect = (i) => {
+  if (!i && tapWorld) {
+    // toque em área vazia: mostra os dados da célula (substitui o hover, que não existe no toque)
+    pendingTapTip = { ...tapWorld };
+    client.send({ t: 'cell', x: tapWorld.x, y: tapWorld.y });
+  }
   inspected = i;
+  renderer.dirty = true;
   renderer.selectedOrganism = i ? { x: i.x, y: i.y } : null;
   if (i) {
     selectSpecies(i.speciesId, false);
     setSideTab('sp');
+    if (isMobile) openSheet('side'); // no toque não há hover: mostra a ficha do organismo
   }
   renderSide();
 };
@@ -237,6 +314,7 @@ function selectSpecies(id: number, toggle = true) {
   if (id && !selectedSp) layerBeforeSpecies = layer;
   selectedSp = id;
   renderer.species = id;
+  renderer.dirty = true;
   if (id) setLayer('species');
   else if (layer === 'species') setLayer(layerBeforeSpecies === 'species' ? 'ocean' : layerBeforeSpecies);
   else setLayer(layer);
@@ -350,9 +428,11 @@ $('pane-ai').innerHTML = `
   <h4>Diretora do planeta</h4>
   <div class="card">
     <div class="row sp-between"><label><input type="checkbox" id="ai-on" /> IA conectada</label><span id="ai-status" class="muted"><span class="dot"></span>desligada</span></div>
-    <div class="muted" style="font-size:11px" id="ai-help">A simulação funciona integralmente sem IA. Sem conexão, o cronista local narra os fatos. Para usar um modelo de linguagem, defina <code>ANTHROPIC_API_KEY</code> e execute <code>npm run ai-proxy</code>: a chave fica no backend local, nunca no navegador.</div>
+    <div class="muted" style="font-size:11px" id="ai-help">A simulação funciona integralmente sem IA. Sem conexão, o cronista local narra os fatos. Para usar um modelo de linguagem, defina a chave do provedor (<code>ANTHROPIC_API_KEY</code>, ou <code>EVOLVERE_AI_PROVIDER=openai</code> + <code>OPENAI_API_KEY</code>) e execute <code>npm run ai-proxy</code>: a chave fica no backend local, nunca no navegador.</div>
     <div class="row"><label><input type="checkbox" id="ai-auto" checked /> Crônica automática (a cada ~600 ticks, se houver novidades)</label></div>
-    <div class="row"><button id="ai-chron" class="primary">Escrever crônica agora</button><button id="ai-hyp">Gerar hipóteses</button></div>
+    <div class="row" style="flex-wrap:wrap"><button id="ai-chron" class="primary">Escrever crônica</button><button id="ai-hyp">Hipóteses</button><button id="ai-evt">Propor acontecimentos</button></div>
+    <div class="row"><label><input type="checkbox" id="ai-autoevt" /> Diretora autônoma: aplica propostas <b>validadas</b> (máx. 4 por 3000 ticks)</label></div>
+    <div class="muted" style="font-size:11px">Acontecimentos são entradas ambientais (clima, nutrientes, geologia, variantes raras). A simulação decide quem sobrevive.</div>
   </div>
   <h4>Perguntar ao planeta</h4>
   <div class="card"><div class="row"><input id="ai-q" class="wide" placeholder="Por que a espécie dominante cresceu?" /><button id="ai-ask">Perguntar</button></div></div>
@@ -366,7 +446,7 @@ function renderAIStatus() {
   if (!on) el.innerHTML = '<span class="dot"></span>desligada (modo local)';
   else if (!s.reachable) el.innerHTML = '<span class="dot warn"></span>proxy offline — modo local';
   else if (!s.configured) el.innerHTML = '<span class="dot warn"></span>sem chave — modo local';
-  else el.innerHTML = `<span class="dot on"></span>${esc(s.model ?? 'conectada')}`;
+  else el.innerHTML = `<span class="dot on"></span>${esc((s.provider ?? '') + ' · ' + (s.model ?? 'conectada'))}`;
 }
 ($('ai-on') as HTMLInputElement).onchange = async (e) => {
   director.enabled = (e.target as HTMLInputElement).checked;
@@ -400,19 +480,45 @@ $('ai-hyp').onclick = async () => {
   suggestionResults.clear();
   renderSuggestions();
 };
+$('ai-evt').onclick = async () => {
+  if (!stats) return;
+  if (!director.enabled) { $('ai-hyp-out').innerHTML = '<div class="card muted">Ative a IA para propor acontecimentos.</div>'; return; }
+  $('ai-hyp-out').innerHTML = '<div class="card muted">Consultando…</div>';
+  suggestions = await director.events(stats);
+  hypText = suggestions.length ? '' : 'A IA não propôs nenhum acontecimento (ou não respondeu).';
+  suggestionResults.clear();
+  renderSuggestions();
+};
+let lastAutoEvt = 0;
+async function autoEvents() {
+  if (!stats || !director.enabled || !($('ai-autoevt') as HTMLInputElement).checked || stats.tick - lastAutoEvt < 1500) return;
+  lastAutoEvt = stats.tick;
+  const items = await director.events(stats);
+  for (const it of items.slice(0, 2)) {
+    const r = await client.suggest(it.suggestion, true); // auto: sujeito a limite de frequência
+    addChronicle({ title: `Diretora: ${it.suggestion.title ?? it.suggestion.type}`, text: `${it.suggestion.narrative ?? it.rationale} → ${r.ok ? 'aceito' : 'recusado'} pelo motor: ${r.reason}`, source: 'ai', tick: stats.tick });
+  }
+}
 function renderSuggestions() {
   const out = $('ai-hyp-out');
   if (!hypText && !suggestions.length) { out.innerHTML = '<div class="card muted">A IA não respondeu (verifique o proxy e a chave).</div>'; return; }
-  const label = (s: SuggestionItem['suggestion']) =>
-    s.type === 'climate_shift' ? `Variação climática de ${s.deltaT > 0 ? '+' : ''}${s.deltaT} °C` : s.type === 'eruption' ? `Erupção em (${s.x.toFixed(0)}, ${s.y.toFixed(0)}) liberando ${s.amount.toFixed(0)}` : `Variante de ${s.gene} (${s.delta > 0 ? '+' : ''}${s.delta}) na espécie #${s.speciesId}`;
-  out.innerHTML = `<h4>Hipóteses da IA</h4><div class="card" style="white-space:pre-wrap">${esc(hypText)}</div>` + suggestions.map((it, i) => {
+  const label = (s: SuggestionItem['suggestion']) => {
+    const base = s.title ? `${s.title} — ` : '';
+    switch (s.type) {
+      case 'climate_shift': return `${base}variação climática de ${s.deltaT > 0 ? '+' : ''}${s.deltaT} °C`;
+      case 'eruption': return `${base}erupção em (${s.x.toFixed(0)}, ${s.y.toFixed(0)}), massa ${s.amount.toFixed(0)}`;
+      case 'nutrient_upwelling': return `${base}ressurgência em (${s.x.toFixed(0)}, ${s.y.toFixed(0)}), massa ${s.amount.toFixed(0)}`;
+      case 'adaptation': return `${base}variante de ${s.gene} (${s.delta > 0 ? '+' : ''}${s.delta}) na espécie #${s.speciesId}`;
+    }
+  };
+  out.innerHTML = `<h4>Propostas da IA</h4>${hypText ? `<div class="card" style="white-space:pre-wrap">${esc(hypText)}</div>` : ''}` + suggestions.map((it, i) => {
     const r = suggestionResults.get(i);
     return `<div class="sug"><b>${esc(label(it.suggestion))}</b><div class="muted">${esc(it.rationale)}</div><div class="row"><button data-sg="${i}" ${r ? 'disabled' : ''}>Submeter ao motor</button></div>${r ? `<div class="res ${r.ok ? 'ok' : 'no'}">${r.ok ? '✓ Aceita pelo motor: ' : '✕ Recusada pelo motor: '}${esc(r.reason)}</div>` : '<div class="muted" style="font-size:11px">O motor verifica se é permitido e coerente com o estado real do planeta.</div>'}</div>`;
   }).join('');
   out.querySelectorAll<HTMLButtonElement>('[data-sg]').forEach((b) => {
     b.onclick = async () => {
       const i = Number(b.dataset.sg);
-      suggestionResults.set(i, await client.suggest(suggestions[i].suggestion));
+      suggestionResults.set(i, await client.suggest(suggestions[i].suggestion, false));
       renderSuggestions();
     };
   });
@@ -490,7 +596,7 @@ let lastStatsAt = 0;
 client.onStats = (st) => {
   stats = st;
   if (!m0 || st.tick === 0) m0 = st.mass.organisms + st.mass.nutrient + st.mass.detritus + st.mass.reservoir;
-  $('r-age').textContent = formatAge(st.tick);
+  $('r-age').textContent = isMobile ? formatAge(st.tick).replace(' milhões de anos', ' Ma').replace(' bilhões de anos', ' Ga').replace(' mil anos', ' ka') : formatAge(st.tick);
   $('r-gen').textContent = String(st.maxGen);
   $('r-pop').textContent = fmt(st.pop);
   $('r-sp').textContent = `${st.speciesAlive} / ${st.speciesTotal}`;
@@ -501,10 +607,11 @@ client.onStats = (st) => {
   if (st.extinct) banner.innerHTML = '<b>Extinção total.</b> A vida desapareceu deste planeta. <button id="bn-seed">Recomeçar a vida</button>';
   if (st.extinct) $('bn-seed')?.addEventListener('click', () => client.send({ t: 'seed' }));
   const now = performance.now();
-  if (now - lastStatsAt > 700) {
+  if (now - lastStatsAt > renderer.quality.uiStatsMs) {
     lastStatsAt = now;
-    renderSide();
-    renderBottom();
+    // no celular, só redesenha o painel que está aberto
+    if (!isMobile || sheet === 'side') renderSide();
+    if (!isMobile || sheet === 'bottom') renderBottom();
   }
   // crônicas: periódicas e apenas quando há novidade
   if (st.tick - lastAutoChron >= 600 && ($('ai-auto') as HTMLInputElement).checked && st.pop > 0) {
@@ -512,6 +619,7 @@ client.onStats = (st) => {
     lastAutoChron = st.tick;
     if (hadNews) director.chronicle(st);
   }
+  autoEvents();
   if (Date.now() - lastAutosave > 90000 && !paused) {
     lastAutosave = Date.now();
     saveNow('autosave').catch(() => {});
@@ -572,27 +680,140 @@ client.onReady = (w, h) => {
 // ------------------------------------------------------------------ laço de desenho
 let lastDraw = 0;
 let drawCost = 8;
+let slowSince = 0;
 function frame(t: number) {
   requestAnimationFrame(frame);
-  if (t - lastDraw < Math.max(16, drawCost * 1.2)) return;
+  if (document.hidden) return;
+  if (t - lastDraw < renderer.quality.minFrameMs) return;
+  // só redesenha se algo mudou, ou se há criaturas detalhadas animadas na tela
+  const animating = renderer.animate && !paused && renderer.lastDetailed > 0;
+  if (!renderer.dirty && !animating) return;
   lastDraw = t;
   const t0 = performance.now();
   renderer.draw(t / 1000);
-  drawCost = drawCost * 0.8 + (performance.now() - t0) * 0.2;
-  // retratos animados
-  if (stats) {
+  drawCost = drawCost * 0.85 + (performance.now() - t0) * 0.15;
+  // qualidade automática: se o desenho ficar lento por 3 s seguidos, desce um nível
+  if (qualitySetting === 'auto') {
+    if (drawCost > 22) {
+      slowSince ||= t;
+      if (t - slowSince > 3000 && qualityLevel !== 'low') applyQuality(qualityLevel === 'high' ? 'medium' : 'low');
+    } else slowSince = 0;
+  }
+  // retratos animados (só o painel visível)
+  if (stats && (!isMobile || sheet === 'side')) {
     const dp = document.getElementById('detail-portrait') as HTMLCanvasElement | null;
-    if (dp && selectedSp && stats.species[selectedSp - 1]) drawPortrait(dp, stats.species[selectedSp - 1].vis, t / 1000);
+    if (dp && selectedSp && stats.species[selectedSp - 1]) drawPortrait(dp, stats.species[selectedSp - 1].vis, renderer.animate ? t / 1000 : 0);
     const ip = document.getElementById('inspect-portrait') as HTMLCanvasElement | null;
-    if (ip && inspected) drawPortrait(ip, inspected.vis, t / 1000);
+    if (ip && inspected) drawPortrait(ip, inspected.vis, renderer.animate ? t / 1000 : 0);
   }
 }
-window.addEventListener('resize', () => { renderer.resize(); renderBottom(); });
+window.addEventListener('resize', () => { updateMobile(); renderer.resize(); renderBottom(); });
 new ResizeObserver(() => { renderer.resize(); renderBottom(); }).observe(canvas);
+
+// ------------------------------------------------------------------ mobile: layout, folhas, menu
+const app = $('app');
+const mq = window.matchMedia('(max-width: 820px), (max-height: 520px) and (pointer: coarse)');
+let isMobile = mq.matches;
+let sheet: 'side' | 'bottom' | null = null;
+function updateMobile() {
+  isMobile = mq.matches;
+  if (!isMobile) openSheet(null, true);
+  app.classList.toggle('mobile', isMobile);
+}
+function openSheet(name: 'side' | 'bottom' | null, silent = false) {
+  sheet = name;
+  app.classList.toggle('sheet-side', name === 'side');
+  app.classList.toggle('sheet-bottom', name === 'bottom');
+  if (!silent) {
+    spRenderKey = '';
+    renderSide();
+    requestAnimationFrame(renderBottom);
+  }
+  syncNav();
+}
+function syncNav() {
+  const cur = sheet ?? (app.classList.contains('show-tools') ? 'tools' : app.classList.contains('show-layers') ? 'layers' : 'map');
+  $('mnav').querySelectorAll('button').forEach((b) => b.classList.toggle('on', (b as HTMLElement).dataset.m === cur));
+}
+$('mnav').querySelectorAll('button').forEach((b) =>
+  b.addEventListener('click', () => {
+    const m = (b as HTMLElement).dataset.m!;
+    const wasOn = b.classList.contains('on');
+    app.classList.remove('show-tools', 'show-layers', 'menu-open');
+    if (m === 'map' || wasOn) openSheet(null);
+    else if (m === 'side' || m === 'bottom') openSheet(m);
+    else {
+      openSheet(null);
+      app.classList.add(m === 'tools' ? 'show-tools' : 'show-layers');
+    }
+    syncNav();
+    requestAnimationFrame(() => renderer.resize());
+  }),
+);
+document.querySelectorAll<HTMLElement>('[data-close]').forEach((b) => b.addEventListener('click', () => openSheet(null)));
+$('b-menu').onclick = () => {
+  const open = app.classList.toggle('menu-open');
+  $('b-menu').setAttribute('aria-expanded', String(open));
+};
+$('menu').addEventListener('click', () => app.classList.remove('menu-open'));
+mq.addEventListener?.('change', updateMobile);
+
+// ------------------------------------------------------------------ qualidade gráfica e segundo plano
+const store = {
+  get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* privado/bloqueado */ } },
+};
+type QualitySetting = QualityLevel | 'auto';
+let qualitySetting = (store.get('evolvere.quality') as QualitySetting) || 'auto';
+let qualityLevel: QualityLevel = 'high';
+let bgPause = (store.get('evolvere.bgpause') ?? (matchMedia('(pointer: coarse)').matches ? '1' : '0')) === '1';
+function autoLevel(): QualityLevel {
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  const mem = (navigator as any).deviceMemory as number | undefined;
+  const cores = navigator.hardwareConcurrency || 4;
+  if (coarse && ((mem !== undefined && mem <= 4) || cores <= 4)) return 'low';
+  if (coarse || (mem !== undefined && mem <= 4)) return 'medium';
+  return 'high';
+}
+function applyQuality(level: QualityLevel) {
+  qualityLevel = level;
+  const q = QUALITY[level];
+  renderer.quality = q;
+  client.send({ t: 'perf', frameMs: q.workerFrameMs, statsMs: q.workerStatsMs, budgetMs: q.workerBudgetMs });
+  renderer.resize();
+  renderer.dirty = true;
+  $('gfx-info').textContent = `Nível em uso: ${level === 'high' ? 'alto' : level === 'medium' ? 'médio' : 'baixo'} · criaturas detalhadas: ${q.detailMax} · quadros ≤ ${Math.round(1000 / q.minFrameMs)} fps`;
+}
+function setQualitySetting(v: QualitySetting) {
+  qualitySetting = v;
+  store.set('evolvere.quality', v);
+  slowSince = 0;
+  applyQuality(v === 'auto' ? autoLevel() : v);
+}
+$('b-gfx').onclick = () => {
+  ($('in-quality') as HTMLSelectElement).value = qualitySetting;
+  ($('in-bgpause') as HTMLInputElement).checked = bgPause;
+  ($('dlg-gfx') as HTMLDialogElement).showModal();
+};
+($('in-quality') as HTMLSelectElement).onchange = (e) => setQualitySetting((e.target as HTMLSelectElement).value as QualitySetting);
+($('in-bgpause') as HTMLInputElement).onchange = (e) => { bgPause = (e.target as HTMLInputElement).checked; store.set('evolvere.bgpause', bgPause ? '1' : '0'); };
+let pausedByHide = false;
+document.addEventListener('visibilitychange', () => {
+  client.send({ t: 'visible', v: !document.hidden });
+  if (document.hidden && bgPause && !paused) { pausedByHide = true; togglePause(true); }
+  else if (!document.hidden) {
+    renderer.dirty = true;
+    if (pausedByHide) { pausedByHide = false; togglePause(false); }
+  }
+});
+
 
 // ------------------------------------------------------------------ início
 director.checkStatus().then(renderAIStatus);
 setSpeed(1);
+updateMobile();
+setQualitySetting(qualitySetting);
+syncNav();
 startWorld(1);
 requestAnimationFrame(frame);
-(window as any).__evolvere = { client, renderer, get stats() { return stats; } };
+(window as any).__evolvere = { client, renderer, get stats() { return stats; }, get quality() { return qualityLevel; }, get isMobile() { return isMobile; }, get sheet() { return sheet; } };

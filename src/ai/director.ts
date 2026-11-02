@@ -6,6 +6,7 @@ import type { StatsPayload } from '../worker/protocol';
 export interface AIStatus {
   configured: boolean;
   model?: string;
+  provider?: string;
   reachable: boolean;
 }
 
@@ -36,7 +37,7 @@ export class AIDirector {
     try {
       const r = await this.fetchImpl(`${this.endpoint}/status`, { signal: AbortSignal.timeout(2500) });
       const j = await r.json();
-      this.status = { configured: !!j.configured, model: j.model, reachable: true };
+      this.status = { configured: !!j.configured, model: j.model, provider: j.provider, reachable: true };
     } catch {
       this.status = { configured: false, reachable: false };
     }
@@ -111,6 +112,17 @@ export class AIDirector {
     return c;
   }
 
+  /** Pede acontecimentos ecológicos. Devolve propostas cruas: o motor as valida depois. */
+  async events(st: StatsPayload): Promise<SuggestionItem[]> {
+    const digest = buildDigest(st, 0);
+    const text = await this.call('events', digest);
+    return text ? parseSuggestions(text) : [];
+  }
+
+  async describe(st: StatsPayload, speciesName = ''): Promise<string | null> {
+    return this.call('describe', buildDigest(st, 0), speciesName);
+  }
+
   /** A IA propõe hipóteses; elas só viram ação depois da validação do motor. */
   async hypotheses(st: StatsPayload): Promise<{ items: SuggestionItem[]; text: string }> {
     const digest = buildDigest(st, 0);
@@ -128,13 +140,16 @@ export function parseSuggestions(text: string): SuggestionItem[] {
     const arr = JSON.parse(m[1]);
     if (!Array.isArray(arr)) return [];
     const out: SuggestionItem[] = [];
+    const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
     for (const a of arr.slice(0, 5)) {
       if (!a || typeof a !== 'object') continue;
       const rationale = String(a.rationale ?? a.justificativa ?? '').slice(0, 300);
-      if (a.type === 'climate_shift' && typeof a.deltaT === 'number') out.push({ suggestion: { type: 'climate_shift', deltaT: a.deltaT }, rationale });
-      else if (a.type === 'eruption' && typeof a.x === 'number' && typeof a.y === 'number' && typeof a.amount === 'number') out.push({ suggestion: { type: 'eruption', x: a.x, y: a.y, amount: a.amount }, rationale });
-      else if (a.type === 'adaptation' && typeof a.speciesId === 'number' && typeof a.gene === 'string' && typeof a.delta === 'number')
-        out.push({ suggestion: { type: 'adaptation', speciesId: a.speciesId, gene: a.gene, delta: a.delta, individuals: typeof a.individuals === 'number' ? a.individuals : 3 }, rationale });
+      const meta = { title: a.title ? String(a.title).slice(0, 80) : undefined, narrative: a.narrative ? String(a.narrative).slice(0, 400) : undefined, rationale };
+      if (a.type === 'climate_shift' && num(a.deltaT)) out.push({ suggestion: { type: 'climate_shift', deltaT: a.deltaT, ...meta }, rationale });
+      else if (a.type === 'eruption' && num(a.x) && num(a.y) && num(a.amount)) out.push({ suggestion: { type: 'eruption', x: a.x, y: a.y, amount: a.amount, ...meta }, rationale });
+      else if (a.type === 'nutrient_upwelling' && num(a.x) && num(a.y) && num(a.amount)) out.push({ suggestion: { type: 'nutrient_upwelling', x: a.x, y: a.y, radius: num(a.radius) ? a.radius : 4, amount: a.amount, ...meta }, rationale });
+      else if (a.type === 'adaptation' && num(a.speciesId) && typeof a.gene === 'string' && num(a.delta))
+        out.push({ suggestion: { type: 'adaptation', speciesId: a.speciesId, gene: a.gene, delta: a.delta, individuals: num(a.individuals) ? a.individuals : 3, ...meta }, rationale });
     }
     return out;
   } catch {

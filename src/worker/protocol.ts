@@ -14,10 +14,12 @@ export type ToWorker =
   | { t: 'climate'; dT: number }
   | { t: 'massExt'; f: number }
   | { t: 'seed' }
-  | { t: 'inspect'; x: number; y: number }
+  | { t: 'inspect'; x: number; y: number; r?: number }
   | { t: 'cell'; x: number; y: number }
   | { t: 'save'; reqId: number }
-  | { t: 'suggest'; reqId: number; s: Suggestion }
+  | { t: 'suggest'; reqId: number; s: Suggestion; auto?: boolean }
+  | { t: 'perf'; frameMs: number; statsMs: number; budgetMs: number }
+  | { t: 'visible'; v: boolean }
   | { t: 'ack' };
 
 export interface SpeciesInfo {

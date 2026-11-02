@@ -13,7 +13,9 @@ export type EventType =
   | 'dominance'
   | 'milestone'
   | 'total_extinction'
-  | 'anagenesis';
+  | 'anagenesis'
+  | 'ai_event'
+  | 'ai_impact';
 
 export interface SimEvent {
   tick: number;

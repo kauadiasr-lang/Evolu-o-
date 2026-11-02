@@ -13,11 +13,21 @@ Requer Node.js ≥ 18.
 ```bash
 npm install
 npm run dev          # abre o jogo em http://localhost:5173
-npm test             # 50+ testes automatizados (núcleo, evolução, estabilidade, IA, save/load)
+npm test             # 63 testes (núcleo, evolução, estabilidade, trava da física, IA, desempenho, save/load)
+npm run test:ui      # responsividade/toque/desempenho em emulação (precisa de `npm run build && npx vite preview --port 4173`)
 npm run test:long    # simulações de longa duração (3 sementes × 30 000 ticks, ~8 min)
 npm run build        # typecheck + build de produção (dist/)
 npm run headless -- 3 8000   # roda o motor sem interface (semente 3, 8000 ticks) e imprime a evolução
 ```
+
+### Celular e tablet
+
+A interface se adapta por CSS/JS (sem versão separada): em telas ≤ 820 px (ou celulares em paisagem) os painéis
+viram **folhas recolhíveis** acionadas por uma barra inferior (Mapa · Camadas · Ações · Dados · Gráficos). Gestos:
+arrastar com um dedo move o mapa; **pinça** dá zoom; toque seleciona um organismo (ou mostra os dados da célula —
+não há dependência de hover); botões ≥ 44 px, respeito às áreas seguras (notch). Em **⋯ → Gráficos** há a
+qualidade (Automática/Alta/Média/Baixa) e a pausa em segundo plano. A qualidade só muda o desenho e a frequência
+de atualização — a física é idêntica (provado por `tests/physics-lock.test.ts`).
 
 ### IA opcional (Diretora do planeta)
 
@@ -25,10 +35,13 @@ O jogo funciona integralmente **sem** internet e sem IA (um cronista local narra
 modelo de linguagem:
 
 ```bash
-cp .env.example .env              # e preencha ANTHROPIC_API_KEY (ou exporte a variável)
-ANTHROPIC_API_KEY=sk-... npm run ai-proxy     # backend local na porta 8787
-npm run dev                                   # o Vite encaminha /api -> 8787
+# Anthropic (padrão)                  # ou OpenAI-compatível:
+ANTHROPIC_API_KEY=sk-... npm run ai-proxy      # EVOLVERE_AI_PROVIDER=openai OPENAI_API_KEY=sk-... npm run ai-proxy
+npm run dev                                    # o Vite encaminha /api -> 8787
+npm run ai-smoke                               # VALIDA a IA de verdade: 1 crônica + 1 rodada de eventos, com latência,
+                                               # validação do motor e impacto medido (sai com código 2 se não houver chave)
 ```
+Variáveis (ver `.env.example`): `EVOLVERE_AI_PROVIDER`, `EVOLVERE_AI_MODEL`, `EVOLVERE_AI_BASE_URL`, `EVOLVERE_AI_RPM`.
 
 A chave existe **somente** no processo do proxy; o navegador nunca a vê. Depois, na aba **IA**, marque
 "IA conectada".
@@ -73,16 +86,31 @@ diretamente:** sugestões passam por `src/core/validate.ts` (limites, coerência
 "adaptação" vira, no máximo, uma variante rara em poucos indivíduos que ainda terá de sobreviver).
 Chamadas periódicas, com cache, limite por minuto e fallback local.
 
+### Papel da IA e acontecimentos ecológicos (Etapa 2)
+
+```
+Simulação (núcleo, worker) ──resumo factual──▶ digest ──▶ Diretor (cache, throttle) ──▶ proxy local ──▶ LLM
+        ▲                                                                                   │ propostas JSON
+        └──── EcoEventManager: valida · limita frequência · aplica como ENTRADA AMBIENTAL ◀──┘
+                     └─ depois mede o IMPACTO REAL (população/biomassa/espécies) e registra
+```
+A IA **nunca** escreve no estado do mundo. Tipos aceitos: variação climática (|ΔT| ≤ 6 °C), ressurgência de
+nutrientes (massa do sedimento, conservada), erupção (só com pressão geológica alta, em águas profundas) e
+variante genética rara (|Δgene| ≤ 0,12 em ≤ 5 indivíduos, que ainda precisam sobreviver à seleção). Há intervalo
+mínimo (300 ticks) e teto (4 eventos/3000 ticks) para eventos automáticos; ações manuais do jogador não consomem
+essa cota. O modo "Diretora autônoma" é opcional e desligado por padrão. Gases/atmosfera ainda não existem na
+física, portanto a IA não pode propô-los.
+
 ## Arquitetura
 
 ```
 src/core/      NÚCLEO (sem DOM, sem IA, roda em Node): rng, genome, traits, world, organisms,
-               species, simulation, layers, snapshot, serialize, validate, stats, params
+               species, simulation, layers, snapshot, serialize, validate, events, stats, params
 src/worker/    sim.worker.ts + protocolo — simulação fora da thread da UI
 src/render/    mapRenderer (camadas, câmera, LOD), morphology (criaturas), charts (séries, árvore, teia)
 src/app/       main (orquestração), panels (painéis), simClient, storage (IndexedDB), styles
 src/ai/        digest (resumo factual), chronicler (cronista local), director (cache/throttle/proxy)
-server/        ai-proxy.mjs — backend local que guarda a chave de API
+server/        ai-proxy.mjs + providers.mjs (Anthropic / OpenAI-compatível) + prompts.mjs — backend local que guarda a chave
 tests/         genética, fisiologia, evolução, estabilidade, save/load, IA, longa duração
 ```
 

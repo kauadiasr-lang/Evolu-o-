@@ -41,11 +41,11 @@ export class SimClient {
       this.send({ t: 'save', reqId: id });
     });
   }
-  suggest(s: Suggestion): Promise<{ ok: boolean; reason: string }> {
+  suggest(s: Suggestion, auto = false): Promise<{ ok: boolean; reason: string }> {
     const id = this.req++;
     return new Promise((res) => {
       this.pending.set(id, res);
-      this.send({ t: 'suggest', reqId: id, s });
+      this.send({ t: 'suggest', reqId: id, s, auto });
     });
   }
 }

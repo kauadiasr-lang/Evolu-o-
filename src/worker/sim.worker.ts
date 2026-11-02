@@ -5,11 +5,17 @@ import { exportSave, importSave } from '../core/serialize';
 import { Simulation } from '../core/simulation';
 import { takeSnapshot, visFromGenes, VIS } from '../core/snapshot';
 import { T, TR } from '../core/traits';
-import { applySuggestion } from '../core/validate';
+import { EcoEventManager } from '../core/events';
 import type { CellInfo, FromWorker, InspectInfo, SpeciesInfo, StatsPayload, ToWorker } from './protocol';
 
 const BASE_TPS = 20; // ticks por segundo a 1×
 let sim: Simulation | null = null;
+let manager = new EcoEventManager();
+// parâmetros de desempenho (ajustados pela UI conforme o dispositivo)
+let frameMs = 33;
+let statsMs = 400;
+let budgetMs = 16;
+let visible = true;
 let speed = 1;
 let acc = 0;
 let last = performance.now();
@@ -85,10 +91,10 @@ function sendStats() {
   post({ t: 'stats', ...payload });
 }
 
-function inspect(x: number, y: number): InspectInfo | null {
+function inspect(x: number, y: number, tol = 1.2): InspectInfo | null {
   if (!sim) return null;
   const p = sim.pool, pl = sim.planet;
-  let best = -1, bd = 1.2;
+  let best = -1, bd = tol;
   for (let i = 0; i < p.used; i++) {
     if (!p.alive[i]) continue;
     let dx = Math.abs(p.x[i] - x);
@@ -132,6 +138,7 @@ ctx.onmessage = (e: MessageEvent<ToWorker>) => {
   switch (m.t) {
     case 'init':
       sim = new Simulation(m.cfg);
+      manager = new EcoEventManager();
       acc = 0;
       dirty = true;
       post({ t: 'ready', w: sim.planet.w, h: sim.planet.h });
@@ -139,6 +146,7 @@ ctx.onmessage = (e: MessageEvent<ToWorker>) => {
       break;
     case 'load':
       sim = importSave(m.save);
+      manager = new EcoEventManager();
       dirty = true;
       post({ t: 'ready', w: sim.planet.w, h: sim.planet.h });
       sendStats();
@@ -150,10 +158,12 @@ ctx.onmessage = (e: MessageEvent<ToWorker>) => {
     case 'climate': if (sim) { sim.setClimate(m.dT); dirty = true; } break;
     case 'massExt': if (sim) { sim.massExtinction(m.f); dirty = true; } break;
     case 'seed': if (sim) { sim.seedPrimordialLife(200); dirty = true; } break;
-    case 'inspect': post({ t: 'inspect', info: inspect(m.x, m.y) }); break;
+    case 'inspect': post({ t: 'inspect', info: inspect(m.x, m.y, m.r) }); break;
     case 'cell': if (sim) post({ t: 'cell', info: cellInfo(m.x, m.y) }); break;
     case 'save': if (sim) { const save = exportSave(sim); post({ t: 'save', reqId: m.reqId, save }); } break;
-    case 'suggest': if (sim) { const v = applySuggestion(sim, m.s); dirty = true; post({ t: 'verdict', reqId: m.reqId, ok: v.ok, reason: v.reason }); } break;
+    case 'perf': frameMs = m.frameMs; statsMs = m.statsMs; budgetMs = m.budgetMs; break;
+    case 'visible': visible = m.v; dirty = true; break;
+    case 'suggest': if (sim) { const v = manager.submit(sim, m.s, { bypassRate: !m.auto }); dirty = true; post({ t: 'verdict', reqId: m.reqId, ok: v.ok, reason: v.reason }); } break;
     case 'ack': inflight = Math.max(0, inflight - 1); break;
   }
 };
@@ -167,7 +177,7 @@ function loop() {
     const t0 = performance.now();
     let steps = 0;
     // orçamento de tempo: a simulação nunca bloqueia o envio de quadros
-    while (acc >= 1 && performance.now() - t0 < 16) {
+    while (acc >= 1 && performance.now() - t0 < budgetMs) {
       sim.step();
       acc -= 1;
       steps++;
@@ -181,13 +191,14 @@ function loop() {
     tpsWindowTicks = 0;
     tpsWindowStart = now;
   }
-  if (sim && dirty && inflight < 2 && now - lastFrame > 33) {
+  if (sim && visible && dirty && inflight < 2 && now - lastFrame > frameMs) {
     sendFrame();
     lastFrame = now;
     dirty = false;
   }
-  if (sim && now - lastStats > 400) {
-    sendStats();
+  if (sim && now - lastStats > statsMs) {
+    manager.tick(sim);
+    if (visible) sendStats();
     lastStats = now;
   }
   setTimeout(loop, speed > 0 ? 1 : 30);

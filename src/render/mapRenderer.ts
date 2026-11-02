@@ -30,6 +30,28 @@ export function rampCss(name: string): string {
   return `linear-gradient(90deg, ${stops.join(',')})`;
 }
 
+export type QualityLevel = 'high' | 'medium' | 'low';
+export interface Quality {
+  /** máximo de criaturas com morfologia completa por quadro */
+  detailMax: number;
+  /** teto da densidade de pixels do canvas */
+  dprCap: number;
+  /** intervalo mínimo entre quadros (ms) */
+  minFrameMs: number;
+  /** anima flagelos/corpos */
+  animate: boolean;
+  /** envio de quadros do worker (ms) e de estatísticas (ms), orçamento de simulação por laço (ms) */
+  workerFrameMs: number;
+  workerStatsMs: number;
+  workerBudgetMs: number;
+  uiStatsMs: number;
+}
+export const QUALITY: Record<QualityLevel, Quality> = {
+  high: { detailMax: 1400, dprCap: 2, minFrameMs: 16, animate: true, workerFrameMs: 33, workerStatsMs: 400, workerBudgetMs: 16, uiStatsMs: 700 },
+  medium: { detailMax: 450, dprCap: 1.5, minFrameMs: 28, animate: true, workerFrameMs: 50, workerStatsMs: 700, workerBudgetMs: 12, uiStatsMs: 1000 },
+  low: { detailMax: 0, dprCap: 1, minFrameMs: 45, animate: false, workerFrameMs: 80, workerStatsMs: 1000, workerBudgetMs: 10, uiStatsMs: 1500 },
+};
+
 export class MapRenderer {
   readonly ctx: CanvasRenderingContext2D;
   private off = document.createElement('canvas');
@@ -48,8 +70,14 @@ export class MapRenderer {
   pointer = { x: 0, y: 0, inside: false };
   selectedOrganism: { x: number; y: number } | null = null;
   private fitted = false;
-  /** pausa a animação de flagelos/corpo quando desligado */
-  animate = true;
+  quality: Quality = QUALITY.high;
+  /** precisa redesenhar (houve mudança de quadro, câmera, seleção...) */
+  dirty = true;
+  /** quantas criaturas detalhadas foram desenhadas no último quadro */
+  lastDetailed = 0;
+  get animate(): boolean {
+    return this.quality.animate;
+  }
 
   constructor(readonly canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
@@ -66,7 +94,8 @@ export class MapRenderer {
 
   resize(): void {
     const r = this.canvas.getBoundingClientRect();
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = Math.min(this.quality.dprCap, window.devicePixelRatio || 1);
+    this.dirty = true;
     this.canvas.width = Math.max(10, Math.floor(r.width * dpr));
     this.canvas.height = Math.max(10, Math.floor(r.height * dpr));
     if (!this.fitted) this.fit();
@@ -77,6 +106,7 @@ export class MapRenderer {
   }
 
   fit(): void {
+    this.dirty = true;
     const r = this.canvas.getBoundingClientRect();
     this.zoom = Math.min(r.width / this.w, r.height / this.h) * 0.98;
     this.cx = this.w / 2;
@@ -100,6 +130,7 @@ export class MapRenderer {
   }
 
   zoomAt(sx: number, sy: number, factor: number): void {
+    this.dirty = true;
     const [wx, wy] = this.screenToWorld(sx, sy);
     this.zoom = Math.max(this.minZoom, Math.min(140, this.zoom * factor));
     const r = this.canvas.getBoundingClientRect();
@@ -108,6 +139,7 @@ export class MapRenderer {
   }
 
   pan(dx: number, dy: number): void {
+    this.dirty = true;
     this.cx -= dx / this.zoom;
     this.cy -= dy / this.zoom;
     this.cy = Math.max(0, Math.min(this.h, this.cy));
@@ -115,6 +147,7 @@ export class MapRenderer {
   }
 
   setFrame(f: FrameMsg): void {
+    this.dirty = true;
     this.frame = f;
     this.layerKind = f.layerKind;
     this.paintLayer(f);
@@ -202,7 +235,7 @@ export class MapRenderer {
         const isSel = sel !== 0 && f.sp[i] === sel;
         const dim = sel !== 0 && !isSel;
         ctx.globalAlpha = dim ? 0.22 : 1;
-        if (R >= 5.5 && detailed < 1400) {
+        if (R >= 5.5 && detailed < this.quality.detailMax) {
           detailed++;
           drawCreature(ctx, vis, o, sx, sy, R, (f.ang[i] / 255 - 0.5) * Math.PI * 2, this.animate ? time : 0, isSel && z > 18);
         } else if (R >= 1.8) {
@@ -219,6 +252,8 @@ export class MapRenderer {
       }
     }
     ctx.globalAlpha = 1;
+    this.lastDetailed = detailed;
+    this.dirty = false;
 
     // limites do planeta
     ctx.strokeStyle = 'rgba(120,180,220,0.25)';

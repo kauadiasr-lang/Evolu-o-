@@ -17,6 +17,7 @@ long('longa duração (mundo padrão)', () => {
         maxPop = Math.max(maxPop, sim.pool.count);
         if (t % 2000 === 0) expect(Math.abs(sim.totalMass() - m0) / m0).toBeLessThan(1e-8);
       }
+      console.log(`[longrun] seed=${seed} pop=${sim.pool.count} max=${maxPop} min=${minPop} species=${sim.species.aliveCount()}/${sim.species.size} mass=${sim.totalMass().toFixed(3)}`);
       expect(maxPop).toBeLessThan(sim.cfg.maxOrganisms);
       expect(minPop).toBeGreaterThan(0);
       expect(sim.pool.count).toBeGreaterThan(0);

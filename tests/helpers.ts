@@ -49,3 +49,22 @@ export function feed(sim: Simulation, x: number, y: number, amount: number): voi
   sim.planet.nutrient[c] += a;
   sim.planet.reservoir -= a;
 }
+
+import { visFromGenes, VIS } from '../src/core/snapshot';
+import type { StatsPayload } from '../src/worker/protocol';
+
+/** Reproduz o payload de estatísticas que o worker envia à interface/IA. */
+export function statsOf(s: Simulation): StatsPayload {
+  const species = s.species.list.map((sp) => {
+    const vis = new Uint8Array(VIS);
+    visFromGenes(sp.centroid, 0, vis, 0);
+    return { id: sp.id, name: sp.name, parentId: sp.parentId, bornTick: sp.bornTick, extinctTick: sp.extinctTick, count: sp.count, peak: sp.peak, trophic: sp.trophic, cause: sp.cause, vis: Array.from(vis), centroid: Array.from(sp.centroid), src: [0, 0, 0] as [number, number, number] };
+  });
+  return {
+    tick: s.tick, pop: s.pool.count, mass: s.massBreakdown(), speciesAlive: s.species.aliveCount(), speciesTotal: s.species.size, maxGen: s.maxGeneration,
+    births: s.birthsTotal, mutations: s.mutationsTotal, deaths: { ...s.deathsTotal },
+    planet: { climateTarget: s.planet.climateTarget, climateOffset: s.planet.climateOffset, pressure: s.planet.pressure, meanTemp: 20, season: 0 },
+    species, history: { ticks: s.history.ticks, series: s.history.series }, events: s.events.items.slice(-50), eventCount: s.events.items.length,
+    web: { nodes: [], edges: [] }, extinct: s.totalExtinct,
+  };
+}

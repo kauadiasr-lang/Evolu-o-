@@ -12,7 +12,9 @@
     "test:long": "EVOLVERE_LONG=1 vitest run tests/longrun.test.ts",
     "typecheck": "tsc --noEmit",
     "headless": "npx tsx scripts/headless.ts",
-    "ai-proxy": "node server/ai-proxy.mjs"
+    "ai-proxy": "node server/ai-proxy.mjs",
+    "ai-smoke": "tsx scripts/ai-smoke.ts",
+    "test:ui": "node scripts/ui-test.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

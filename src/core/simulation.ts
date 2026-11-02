@@ -565,6 +565,33 @@ export class Simulation {
     return amount;
   }
 
+  /**
+   * Ressurgência: leva massa mineral do reservatório (sedimento) à água em torno de (cx,cy).
+   * Não aquece nem mata: apenas redistribui recursos (massa total conservada).
+   */
+  upwelling(cx: number, cy: number, radius: number, amount: number): number {
+    const pl = this.planet;
+    amount = Math.min(amount, pl.reservoir);
+    if (amount <= 0) return 0;
+    const cells: { c: number; w: number }[] = [];
+    let ws = 0;
+    for (let dy = -radius; dy <= radius; dy++) {
+      const y = Math.floor(cy) + dy;
+      if (y < 0 || y >= pl.h) continue;
+      for (let dx = -radius; dx <= radius; dx++) {
+        const d = Math.hypot(dx, dy);
+        if (d > radius) continue;
+        const x = (((Math.floor(cx) + dx) % pl.w) + pl.w) % pl.w;
+        const w = Math.exp(-(d * d) / (radius * radius * 0.6));
+        cells.push({ c: y * pl.w + x, w });
+        ws += w;
+      }
+    }
+    for (const e of cells) pl.nutrient[e.c] += (amount * e.w) / ws;
+    pl.reservoir -= amount;
+    return amount;
+  }
+
   /** Impacto: mata tudo no raio, devolvendo a massa como detrito, e aquece a água. */
   impact(cx: number, cy: number, radius: number): number {
     const pl = this.planet;

@@ -119,3 +119,94 @@ dialog .row { justify-content: flex-end; margin-top: 16px; }
   main { grid-template-columns: 1fr; grid-template-rows: 55% 45%; } #side { border-left: 0; border-top: 1px solid var(--line); }
   #app { grid-template-rows: 54px minmax(0, 1fr) 190px; } .actions button { padding: 5px 6px; }
 }
+
+/* ============ Responsivo / toque ============ */
+#b-menu, #mnav, .sheet-x, #speed-sel { display: none; }
+#b-menu { font-size: 18px; }
+.chk { flex-direction: row !important; align-items: center; gap: 8px !important; color: var(--text) !important; }
+dialog { max-width: calc(100vw - 24px); }
+@media (pointer: coarse) {
+  button, select, input[type=checkbox] { min-height: 44px; }
+  input[type=checkbox] { min-width: 24px; }
+  .layers button, .tools button, .tabs button, .speeds button, .zoomctl button, button.icon { min-height: 44px; min-width: 44px; }
+  .sp { padding: 8px 6px; }
+  input[type=range] { height: 32px; }
+}
+
+/* Celular (retrato ou paisagem) e tablets estreitos: painéis viram folhas recolhíveis */
+@media (max-width: 820px), (max-height: 520px) and (pointer: coarse) {
+  html, body { overscroll-behavior: none; }
+  #app { grid-template-rows: calc(48px + env(safe-area-inset-top)) minmax(0, 1fr) calc(58px + env(safe-area-inset-bottom)); height: 100dvh; }
+  #top { padding: env(safe-area-inset-top) 10px 0; gap: 8px; }
+  .brand b, .brand small { display: none; }
+  .readouts { gap: 12px; }
+  .readouts > div:nth-child(2), .readouts > div:nth-child(5) { display: none; }
+  .readouts > div { flex: 0 0 auto; }
+  .readouts span { font-size: 12.5px; }
+  .speeds, #b-step, .tps { display: none; }
+  #speed-sel { display: block; min-height: 40px; }
+  #b-menu { display: inline-block; }
+  .controls { margin-left: auto; }
+  .actions { display: none; position: fixed; top: calc(52px + env(safe-area-inset-top)); right: 8px; z-index: 30; flex-direction: column; align-items: stretch; background: var(--panel); border: 1px solid var(--line2); border-radius: 10px; padding: 8px; box-shadow: 0 8px 30px rgba(0,0,0,.6); }
+  #app.menu-open .actions { display: flex; }
+  main { display: block; position: relative; min-height: 0; }
+  #stage { position: absolute; inset: 0; }
+
+  /* camadas: faixa horizontal, só quando ativada */
+  .layers { display: none; top: 6px; left: 6px; right: 6px; max-width: none; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  #app.show-layers .layers { display: flex; }
+  .layers button { flex: 0 0 auto; }
+  .legend { top: auto; bottom: 8px; right: 8px; width: 150px; }
+  #app.show-layers .legend { top: 60px; bottom: auto; }
+  .tools { display: none; left: 6px; right: 66px; bottom: 8px; max-height: 55%; overflow-y: auto; }
+  #app.show-tools .tools { display: flex; }
+  .tools .trow { max-width: none; }
+  .zoomctl { bottom: 8px; right: 6px; }
+  .legend { display: none; } #app.show-layers .legend { display: block; }
+  .tip { max-width: 70vw; }
+
+  /* folhas */
+  #side, #bottom { position: fixed; left: 0; right: 0; bottom: calc(58px + env(safe-area-inset-bottom)); height: 58dvh; z-index: 20; transform: translateY(110%); transition: transform .22s ease; border: 1px solid var(--line2); border-radius: 14px 14px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,.65); visibility: hidden; }
+  #app.sheet-side #side, #app.sheet-bottom #bottom { transform: none; visibility: visible; }
+  .sheet-x { display: block; position: absolute; top: 4px; right: 6px; z-index: 5; min-width: 44px; min-height: 44px; background: transparent; border: 0; font-size: 18px; }
+  #side .tabs, #bottom .tabs { overflow-x: auto; flex-wrap: nowrap; padding-right: 52px; scrollbar-width: none; }
+  .tabs button { flex: 0 0 auto; padding: 10px 12px; white-space: nowrap; }
+  .tabs .hint { display: none; }
+  .bpane { flex-direction: column; } .bpane canvas { flex: 1 1 0; min-height: 0; }
+  .detail { grid-template-columns: 96px 1fr; } .detail canvas { width: 96px; height: 96px; }
+  .gene { grid-template-columns: 96px 1fr 34px; }
+
+  /* barra de navegação inferior */
+  #mnav { display: flex; position: relative; z-index: 25; background: #08101f; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+  #mnav button { flex: 1; border: 0; border-radius: 0; background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; color: var(--muted); padding: 4px 0; }
+  #mnav button i { font-style: normal; font-size: 18px; line-height: 1; }
+  #mnav button.on { color: #fff; background: #0f2a35; border-top: 2px solid var(--accent); }
+  #bottom .tabs { padding-top: 6px; }
+  dialog { min-width: 0; width: calc(100vw - 24px); } .save-list { min-width: 0; }
+}
+/* paisagem em celular: folhas viram gavetas laterais */
+@media (max-height: 520px) and (pointer: coarse) {
+  #app { grid-template-rows: calc(42px + env(safe-area-inset-top)) minmax(0, 1fr) 0; }
+  #mnav { position: fixed; left: 0; top: 42px; bottom: 0; width: 64px; flex-direction: column; border-top: 0; border-right: 1px solid var(--line); padding-bottom: 0; height: auto; margin-top: env(safe-area-inset-top); }
+  #app main { margin-left: 64px; }
+  #side, #bottom { left: 64px; right: auto; width: min(480px, calc(100vw - 80px)); top: calc(42px + env(safe-area-inset-top)); bottom: 0; height: auto; border-radius: 0 14px 0 0; transform: translateX(-110%); }
+  #app.sheet-side #side, #app.sheet-bottom #bottom { transform: none; }
+  #top { min-height: 42px; }
+  .layers { left: 70px; }
+}
+
+/* retrato: com uma folha aberta, o mapa ocupa só a área visível acima dela (não fica escondido) */
+@media (max-width: 820px) and (min-height: 521px), (max-width: 820px) and (pointer: fine) {
+  #app.sheet-side #stage, #app.sheet-bottom #stage { bottom: 58dvh; }
+  #app.sheet-side .tools, #app.sheet-bottom .tools { display: none; }
+}
+@media (max-width: 560px) { .readouts > div:nth-child(4), .readouts > div:nth-child(6) { display: none; } }
+
+@media (max-width: 460px) {
+  .readouts label { display: none; }
+  .readouts { gap: 10px; }
+  #speed-sel { min-width: 58px; padding: 4px; }
+  #top { gap: 6px; padding-left: 8px; padding-right: 6px; }
+  .brand svg { width: 26px; height: 26px; }
+}
+@media (max-width: 360px) { .brand { display: none; } .readouts span { font-size: 12px; } }
