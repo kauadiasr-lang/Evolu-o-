@@ -1,0 +1,236 @@
+import { V, VIS } from '../core/snapshot';
+
+/**
+ * Morfogênese procedural: a aparência é construída a partir dos genes (quantizados em bytes).
+ * Forma, flagelos, espinhos, carapaça, pigmentação e padrões vêm todos do genoma.
+ */
+
+const TAU = Math.PI * 2;
+
+function mixAngle(a: number, b: number, t: number): number {
+  let d = ((b - a + 540) % 360) - 180;
+  return (a + d * t + 360) % 360;
+}
+
+export interface BodyColor {
+  h: number;
+  s: number;
+  l: number;
+}
+
+export function bodyColor(v: ArrayLike<number>, o: number): BodyColor {
+  const photo = v[o + V.PHOTO] / 255, pred = v[o + V.PRED] / 255, osmo = v[o + V.OSMO] / 255;
+  let h = (v[o + V.HUE] / 255) * 360;
+  h = mixAngle(h, 128, Math.min(1, photo * 0.45));
+  h = mixAngle(h, 352, Math.min(1, pred * 0.8));
+  h = mixAngle(h, 38, Math.min(1, osmo * (1 - photo) * 0.4));
+  return { h, s: 38 + 52 * (v[o + V.SAT] / 255), l: 46 + 8 * (1 - pred) };
+}
+
+export function hsl(c: BodyColor, dl = 0, a = 1): string {
+  return `hsla(${c.h.toFixed(0)},${c.s.toFixed(0)}%,${Math.max(5, Math.min(95, c.l + dl)).toFixed(0)}%,${a})`;
+}
+
+/** Paleta pré-computada para pontos simples (evita criar strings por organismo). */
+const DOT_PALETTE: string[] = [];
+export function dotColor(v: ArrayLike<number>, o: number): string {
+  const photo = v[o + V.PHOTO], pred = v[o + V.PRED], hue = v[o + V.HUE];
+  const key = (hue >> 3) * 16 + (photo >> 6) * 4 + (pred >> 6);
+  let c = DOT_PALETTE[key];
+  if (!c) {
+    const tmp = [hue & ~7, 140, 0, photo & ~63, 0, pred & ~63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const bc = bodyColor(tmp, 0);
+    c = hsl(bc, 4);
+    DOT_PALETTE[key] = c;
+  }
+  return c;
+}
+
+function rnd(seed: number): () => number {
+  let s = seed >>> 0 || 1;
+  return () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
+function bodyPath(ctx: CanvasRenderingContext2D, R: number, elong: number, lobes: number, symm: number, t: number, wob: number): void {
+  const N = 28;
+  const rx = R * (1 + elong * 0.95), ry = R * (1 - elong * 0.28);
+  const k = 2 + Math.floor(lobes * 6);
+  const asym = (1 - symm) * 0.2;
+  ctx.beginPath();
+  for (let i = 0; i <= N; i++) {
+    const a = (i / N) * TAU;
+    let m = 1 + lobes * 0.2 * Math.cos(k * a + wob) + asym * Math.cos(a - 1) + asym * 0.5 * Math.cos(2 * a + 0.5);
+    m += 0.025 * Math.sin(a * 3 + t * 2.2 + wob);
+    const x = Math.cos(a) * rx * m, y = Math.sin(a) * ry * m;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+/**
+ * Desenha uma criatura. `R` é o raio em pixels, `ang` a direção do corpo (rad), `t` o tempo em s.
+ */
+export function drawCreature(ctx: CanvasRenderingContext2D, v: ArrayLike<number>, o: number, x: number, y: number, R: number, ang: number, t: number, outline = false): void {
+  const g = (k: number) => v[o + k] / 255;
+  const elong = g(V.ELONG), lobes = g(V.LOBES), symm = g(V.SYMM), photo = g(V.PHOTO), osmo = g(V.OSMO);
+  const pred = g(V.PRED), motil = g(V.MOTIL), def = g(V.DEF), spike = g(V.SPIKE), flag = g(V.FLAG);
+  const pattern = g(V.PATTERN), nucleus = g(V.NUCLEUS);
+  const col = bodyColor(v, o);
+  const seed = (v[o + V.HUE] * 31 + v[o + V.PATTERN] * 17 + v[o + V.SIZE] * 7) | 0;
+  const r = rnd(seed);
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(ang);
+  const breathe = 1 + 0.03 * Math.sin(t * 2 + seed);
+  const rx = R * (1 + elong * 0.95) * breathe;
+
+  // flagelos (atrás do corpo)
+  const nFlag = motil > 0.12 || flag > 0.3 ? 1 + Math.floor(flag * 3.99) : 0;
+  if (nFlag > 0) {
+    ctx.lineWidth = Math.max(1, R * 0.07);
+    ctx.strokeStyle = hsl(col, 12, 0.85);
+    ctx.lineCap = 'round';
+    const len = R * (1.4 + 2.2 * flag + 1.2 * motil);
+    for (let k = 0; k < nFlag; k++) {
+      const off = nFlag === 1 ? 0 : (k / (nFlag - 1) - 0.5) * R * 0.9;
+      ctx.beginPath();
+      ctx.moveTo(-rx * 0.92, off);
+      const steps = 10;
+      for (let s = 1; s <= steps; s++) {
+        const u = s / steps;
+        ctx.lineTo(-rx * 0.92 - u * len, off + Math.sin(t * (6 + 4 * motil) - u * 5 + k) * R * 0.28 * u);
+      }
+      ctx.stroke();
+    }
+  }
+  // cílios curtos (osmótrofos de superfície grande)
+  if (osmo > 0.5 && R > 6) {
+    ctx.strokeStyle = hsl(col, 15, 0.5);
+    ctx.lineWidth = 1;
+    const n = 14;
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU;
+      const cx = Math.cos(a) * rx, cy = Math.sin(a) * R * (1 - elong * 0.28);
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx * 1.18 + Math.sin(t * 5 + i) * 0.8, cy * 1.18 + Math.cos(t * 5 + i) * 0.8);
+    }
+    ctx.stroke();
+  }
+  // espinhos
+  if (spike > 0.12) {
+    const n = 5 + Math.floor(spike * 9);
+    ctx.fillStyle = hsl(col, -22, 0.95);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU + (1 - symm) * 0.4;
+      const bx = Math.cos(a) * rx, by = Math.sin(a) * R * (1 - elong * 0.28);
+      const tipL = 1 + 0.32 + spike * 0.7;
+      ctx.beginPath();
+      ctx.moveTo(bx * 0.96 - Math.sin(a) * R * 0.1, by * 0.96 + Math.cos(a) * R * 0.1);
+      ctx.lineTo(bx * tipL, by * tipL);
+      ctx.lineTo(bx * 0.96 + Math.sin(a) * R * 0.1, by * 0.96 - Math.cos(a) * R * 0.1);
+      ctx.fill();
+    }
+  }
+
+  // corpo
+  bodyPath(ctx, R * breathe, elong, lobes, symm, t, seed);
+  const grad = ctx.createRadialGradient(-R * 0.25, -R * 0.25, R * 0.1, 0, 0, rx * 1.1);
+  grad.addColorStop(0, hsl(col, 14, 0.95));
+  grad.addColorStop(1, hsl(col, -10, 0.92));
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // padrões (recortados no corpo)
+  if (pattern > 0.25) {
+    ctx.save();
+    bodyPath(ctx, R * breathe, elong, lobes, symm, t, seed);
+    ctx.clip();
+    ctx.fillStyle = hsl(col, -18, 0.55);
+    ctx.strokeStyle = hsl(col, -18, 0.55);
+    if (pattern < 0.5) {
+      const n = 4 + Math.floor(pattern * 12);
+      for (let i = 0; i < n; i++) {
+        ctx.beginPath();
+        ctx.arc((r() - 0.5) * rx * 1.6, (r() - 0.5) * R * 1.4, R * (0.08 + r() * 0.12), 0, TAU);
+        ctx.fill();
+      }
+    } else if (pattern < 0.75) {
+      ctx.lineWidth = Math.max(1, R * 0.1);
+      const n = 3 + Math.floor((pattern - 0.5) * 12);
+      for (let i = 0; i < n; i++) {
+        const xx = (i / (n - 1) - 0.5) * rx * 1.7;
+        ctx.beginPath();
+        ctx.moveTo(xx, -R * 1.2);
+        ctx.quadraticCurveTo(xx + R * 0.3, 0, xx, R * 1.2);
+        ctx.stroke();
+      }
+    } else {
+      ctx.lineWidth = Math.max(1, R * 0.09);
+      for (let i = 1; i <= 3; i++) {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rx * 0.28 * i, R * 0.25 * i, 0, 0, TAU);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  // cloroplastos
+  if (photo > 0.25) {
+    const n = 2 + Math.floor(photo * 7);
+    ctx.fillStyle = `hsla(${(125 + r() * 20).toFixed(0)},70%,${(30 + 10 * photo).toFixed(0)}%,0.9)`;
+    for (let i = 0; i < n; i++) {
+      const a = r() * TAU, d = Math.sqrt(r()) * 0.7;
+      ctx.beginPath();
+      ctx.ellipse(Math.cos(a) * rx * d, Math.sin(a) * R * d, R * 0.13, R * 0.08, a, 0, TAU);
+      ctx.fill();
+    }
+  }
+  // núcleo
+  ctx.fillStyle = hsl(col, -26, 0.9);
+  ctx.beginPath();
+  ctx.arc((1 - symm) * R * 0.3, 0, R * (0.16 + 0.2 * nucleus), 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = hsl(col, 20, 0.9);
+  ctx.beginPath();
+  ctx.arc((1 - symm) * R * 0.3 + R * 0.04, -R * 0.04, R * 0.05, 0, TAU);
+  ctx.fill();
+
+  // boca / vacúolo alimentar dos predadores
+  if (pred > 0.2) {
+    ctx.fillStyle = 'rgba(40,6,10,0.85)';
+    ctx.beginPath();
+    ctx.ellipse(rx * 0.82, 0, R * (0.1 + 0.2 * pred), R * (0.07 + 0.12 * pred), 0, 0, TAU);
+    ctx.fill();
+  }
+
+  // contorno / carapaça
+  bodyPath(ctx, R * breathe, elong, lobes, symm, t, seed);
+  ctx.lineWidth = Math.max(1, R * (0.06 + def * 0.2));
+  ctx.strokeStyle = hsl(col, -28 - def * 10, 0.95);
+  ctx.stroke();
+  if (def > 0.4) {
+    ctx.save();
+    ctx.scale(0.78, 0.78);
+    bodyPath(ctx, R * breathe, elong, lobes, symm, t, seed);
+    ctx.lineWidth = Math.max(1, R * 0.05);
+    ctx.strokeStyle = hsl(col, 28, 0.55);
+    ctx.stroke();
+    ctx.restore();
+  }
+  if (outline) {
+    bodyPath(ctx, R * breathe * 1.35, elong, lobes, symm, t, seed);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#fff';
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+export { VIS };

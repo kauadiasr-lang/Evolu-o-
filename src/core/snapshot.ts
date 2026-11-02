@@ -13,6 +13,8 @@ export interface FrameSnapshot {
   y: Float32Array;
   sp: Uint32Array;
   vis: Uint8Array;
+  /** direção do movimento, 0..255 -> -π..π */
+  ang: Uint8Array;
 }
 
 export function visFromGenes(genes: ArrayLike<number>, go: number, out: Uint8Array, oo: number): void {
@@ -23,7 +25,7 @@ export function visFromGenes(genes: ArrayLike<number>, go: number, out: Uint8Arr
 export function takeSnapshot(sim: Simulation): FrameSnapshot {
   const pool = sim.pool;
   const n = pool.count;
-  const x = new Float32Array(n), y = new Float32Array(n), sp = new Uint32Array(n), vis = new Uint8Array(n * VIS);
+  const x = new Float32Array(n), y = new Float32Array(n), sp = new Uint32Array(n), vis = new Uint8Array(n * VIS), ang = new Uint8Array(n);
   let k = 0;
   for (let i = 0; i < pool.used; i++) {
     if (!pool.alive[i]) continue;
@@ -31,7 +33,8 @@ export function takeSnapshot(sim: Simulation): FrameSnapshot {
     y[k] = pool.y[i];
     sp[k] = pool.species[i];
     visFromGenes(pool.genes, i * GENE_COUNT, vis, k * VIS);
+    ang[k] = ((Math.atan2(pool.vy[i], pool.vx[i]) / (2 * Math.PI) + 0.5) * 255) | 0;
     k++;
   }
-  return { tick: sim.tick, n, x, y, sp, vis };
+  return { tick: sim.tick, n, x, y, sp, vis, ang };
 }

@@ -135,9 +135,10 @@ export interface SpeciationEvent {
 const NICHE_GENES = [G.SIZE, G.PHOTO, G.OSMO, G.PRED, G.TOPT, G.MOTIL, G.DEFENSE, G.TTOL];
 
 /**
- * Especiação: agrupamentos geneticamente coerentes que se afastaram do genoma-âncora
- * da espécie E que estão isolados (geograficamente ou por nicho ecológico) tornam-se
- * uma nova espécie. Quando a espécie inteira deriva, a âncora é atualizada (anagênese).
+ * Especiação por agrupamentos: cada espécie grande é dividida em dois grupos (2-means).
+ * Se os grupos estão separados por uma LACUNA genética grande em relação à variação
+ * interna (população bimodal) e isolados (geograficamente ou por nicho ecológico),
+ * o grupo menor torna-se uma nova espécie. Variação contínua não especia.
  * A IA não participa: a decisão é puramente genética/ecológica.
  */
 export function updateSpecies(
@@ -145,121 +146,108 @@ export function updateSpecies(
   pool: OrganismPool,
   tick: number,
   rng: Rng,
-  threshold: number = P.SPECIATION_THRESHOLD,
+  minDist: number = P.SPECIATION_MIN_DIST,
+  gap: number = P.SPECIATION_GAP,
 ): SpeciationEvent[] {
   const S = reg.size + 1;
-  const cnt = new Int32Array(S);
-  const sum = new Float64Array(S * GENE_COUNT);
-  const sx = new Float64Array(S), sy = new Float64Array(S), sxx = new Float64Array(S), syy = new Float64Array(S);
+  const members: number[][] = Array.from({ length: S }, () => []);
   const { alive, species, genes, x, y } = pool;
-  for (let i = 0; i < pool.used; i++) {
-    if (!alive[i]) continue;
-    const s = species[i];
-    cnt[s]++;
-    const o = i * GENE_COUNT;
-    for (let k = 0; k < GENE_COUNT; k++) sum[s * GENE_COUNT + k] += genes[o + k];
-    sx[s] += x[i]; sy[s] += y[i]; sxx[s] += x[i] * x[i]; syy[s] += y[i] * y[i];
-  }
-  for (let id = 1; id < S; id++) {
-    const sp = reg.get(id);
-    if (cnt[id] > 0) {
-      for (let k = 0; k < GENE_COUNT; k++) sp.centroid[k] = sum[id * GENE_COUNT + k] / cnt[id];
-      sp.trophic = classifyTrophic(sp.centroid);
-    }
-    sp.count = cnt[id];
-  }
-
-  // passo 2: divergentes da âncora
-  const divCnt = new Int32Array(S);
-  const divSum = new Float64Array(S * GENE_COUNT);
-  const eligible = new Uint8Array(S);
-  for (let id = 1; id < S; id++) eligible[id] = cnt[id] >= P.MIN_SPECIES_FOR_SPLIT && reg.get(id).extinctTick < 0 ? 1 : 0;
-  for (let i = 0; i < pool.used; i++) {
-    if (!alive[i]) continue;
-    const s = species[i];
-    if (!eligible[s]) continue;
-    const o = i * GENE_COUNT;
-    if (geneDistance(genes, o, reg.get(s).anchor, 0) > threshold) {
-      divCnt[s]++;
-      for (let k = 0; k < GENE_COUNT; k++) divSum[s * GENE_COUNT + k] += genes[o + k];
-    }
-  }
+  for (let i = 0; i < pool.used; i++) if (alive[i]) members[species[i]].push(i);
 
   const out: SpeciationEvent[] = [];
-  const candidates: { id: number; k: Float32Array }[] = [];
+  const G_ = GENE_COUNT;
   for (let id = 1; id < S; id++) {
-    if (!eligible[id] || divCnt[id] === 0) continue;
     const sp = reg.get(id);
-    if (divCnt[id] / cnt[id] > 0.85) {
-      // a espécie inteira derivou: anagênese
-      sp.anchor.set(sp.centroid);
-      continue;
+    const m = members[id];
+    sp.count = m.length;
+    if (m.length > 0) {
+      for (let k = 0; k < G_; k++) {
+        let a = 0;
+        for (const i of m) a += genes[i * G_ + k];
+        sp.centroid[k] = a / m.length;
+      }
+      sp.trophic = classifyTrophic(sp.centroid);
     }
-    if (divCnt[id] < P.SPECIATION_MIN_CLUSTER) continue;
-    const k = new Float32Array(GENE_COUNT);
-    for (let j = 0; j < GENE_COUNT; j++) k[j] = divSum[id * GENE_COUNT + j] / divCnt[id];
-    candidates.push({ id, k });
-  }
-  if (candidates.length === 0) return out;
+    if (sp.extinctTick >= 0 || m.length < P.MIN_SPECIES_FOR_SPLIT) continue;
 
-  // passo 3: membros coerentes do agrupamento
-  const byS = new Map<number, number[]>();
-  const kOf = new Map<number, Float32Array>();
-  for (const c of candidates) {
-    byS.set(c.id, []);
-    kOf.set(c.id, c.k);
-  }
-  for (let i = 0; i < pool.used; i++) {
-    if (!alive[i]) continue;
-    const s = species[i];
-    const k = kOf.get(s);
-    if (!k) continue;
-    const o = i * GENE_COUNT;
-    if (geneDistance(genes, o, k, 0) < threshold * 0.75 && geneDistance(genes, o, reg.get(s).anchor, 0) > threshold * 0.8) byS.get(s)!.push(i);
-  }
-  for (const c of candidates) {
-    const members = byS.get(c.id)!;
-    if (members.length < P.SPECIATION_MIN_CLUSTER) continue;
-    const sp = reg.get(c.id);
-    // estatísticas do agrupamento vs o resto
-    const m = members.length;
-    const rest = cnt[c.id] - m;
-    if (rest < 1) continue;
-    const mg = new Float64Array(GENE_COUNT);
-    let mx = 0, my = 0;
-    for (const i of members) {
-      for (let k = 0; k < GENE_COUNT; k++) mg[k] += genes[i * GENE_COUNT + k];
-      mx += x[i]; my += y[i];
+    // 2-means: sementes = organismo mais distante do centroide e o mais distante dele
+    let f1 = m[0], bd = -1;
+    for (const i of m) {
+      const d = geneDistance(genes, i * G_, sp.centroid, 0);
+      if (d > bd) { bd = d; f1 = i; }
     }
-    for (let k = 0; k < GENE_COUNT; k++) mg[k] /= m;
-    mx /= m; my /= m;
-    const rx = (sx[c.id] - mx * m) / rest, ry = (sy[c.id] - my * m) / rest;
-    const varx = Math.max(0, sxx[c.id] / cnt[c.id] - (sx[c.id] / cnt[c.id]) ** 2);
-    const vary = Math.max(0, syy[c.id] / cnt[c.id] - (sy[c.id] / cnt[c.id]) ** 2);
-    const sd = Math.sqrt(varx + vary);
-    const sep = Math.hypot(mx - rx, my - ry);
-    const geographic = sep > Math.max(4, 1.1 * sd);
+    if (bd < minDist * 0.5) continue; // espécie homogênea
+    let f2 = f1;
+    bd = -1;
+    for (const i of m) {
+      const d = geneDistance(genes, i * G_, genes, f1 * G_);
+      if (d > bd) { bd = d; f2 = i; }
+    }
+    const cA = new Float64Array(G_), cB = new Float64Array(G_);
+    for (let k = 0; k < G_; k++) { cA[k] = genes[f1 * G_ + k]; cB[k] = genes[f2 * G_ + k]; }
+    const assign = new Uint8Array(m.length);
+    let nA = 0, nB = 0;
+    for (let it = 0; it < 5; it++) {
+      const sA = new Float64Array(G_), sB = new Float64Array(G_);
+      nA = 0; nB = 0;
+      for (let q = 0; q < m.length; q++) {
+        const o = m[q] * G_;
+        let dA = 0, dB = 0;
+        for (let k = 0; k < G_; k++) {
+          const a = genes[o + k] - cA[k], b = genes[o + k] - cB[k];
+          dA += a * a; dB += b * b;
+        }
+        if (dA <= dB) { assign[q] = 0; nA++; for (let k = 0; k < G_; k++) sA[k] += genes[o + k]; }
+        else { assign[q] = 1; nB++; for (let k = 0; k < G_; k++) sB[k] += genes[o + k]; }
+      }
+      if (nA === 0 || nB === 0) break;
+      for (let k = 0; k < G_; k++) { cA[k] = sA[k] / nA; cB[k] = sB[k] / nB; }
+    }
+    if (nA === 0 || nB === 0) continue;
+    const small = nA <= nB ? 0 : 1;
+    const nSmall = small === 0 ? nA : nB;
+    if (nSmall < P.SPECIATION_MIN_CLUSTER) continue;
+    // dispersão interna e separação entre os grupos
+    let wA = 0, wB = 0;
+    for (let q = 0; q < m.length; q++) {
+      const d = geneDistance(genes, m[q] * G_, assign[q] === 0 ? cA : cB, 0);
+      if (assign[q] === 0) wA += d; else wB += d;
+    }
+    wA /= nA; wB /= nB;
+    const D = geneDistance(cA, 0, cB, 0);
+    if (D < minDist || D < gap * Math.max(wA, wB)) continue;
+
+    // isolamento: geográfico e/ou ecológico
+    let mx = 0, my = 0, rx = 0, ry = 0, sxx = 0, syy = 0;
+    const nRest = m.length - nSmall;
+    for (let q = 0; q < m.length; q++) {
+      const i = m[q];
+      sxx += x[i] * x[i]; syy += y[i] * y[i];
+      if (assign[q] === small) { mx += x[i]; my += y[i]; } else { rx += x[i]; ry += y[i]; }
+    }
+    mx /= nSmall; my /= nSmall; rx /= nRest; ry /= nRest;
+    const ax = (mx * nSmall + rx * nRest) / m.length, ay = (my * nSmall + ry * nRest) / m.length;
+    const sd = Math.sqrt(Math.max(0, sxx / m.length - ax * ax) + Math.max(0, syy / m.length - ay * ay));
+    const geographic = Math.hypot(mx - rx, my - ry) > Math.max(4, 1.1 * sd);
+    const cs = small === 0 ? cA : cB, cr = small === 0 ? cB : cA;
     let niche = 0;
-    for (const k of NICHE_GENES) {
-      const restMean = (sum[c.id * GENE_COUNT + k] - mg[k] * m) / rest;
-      niche += Math.abs(mg[k] - restMean);
-    }
+    for (const k of NICHE_GENES) niche += Math.abs(cs[k] - cr[k]);
     niche /= NICHE_GENES.length;
-    const ecological = niche > 0.1;
+    const ecological = niche > 0.08;
     if (!geographic && !ecological) continue;
 
-    const gArr = Float32Array.from(mg);
+    const gArr = Float32Array.from(cs);
     const child = reg.create(sp, gArr, 0, tick, rng);
-    child.count = m;
-    child.peak = m;
+    child.count = nSmall;
+    child.peak = nSmall;
     child.centroid.set(gArr);
-    for (const i of members) species[i] = child.id;
-    sp.count -= m;
+    for (let q = 0; q < m.length; q++) if (assign[q] === small) species[m[q]] = child.id;
+    sp.count -= nSmall;
     out.push({
       kind: 'speciation',
       species: child,
       parent: sp,
-      size: m,
+      size: nSmall,
       reason: geographic && ecological ? 'isolamento geográfico e ecológico' : geographic ? 'isolamento geográfico' : 'divergência de nicho ecológico',
     });
   }

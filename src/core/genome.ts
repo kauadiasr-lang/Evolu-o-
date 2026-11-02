@@ -64,11 +64,18 @@ export const GENE_INFO: { key: keyof typeof G; label: string; weight: number }[]
 const W = Float64Array.from(GENE_INFO.map((g) => g.weight));
 const WSUM = W.reduce((a, b) => a + b, 0);
 
-/** Distância genética ponderada (média das diferenças absolutas), em [0,1]. */
+/**
+ * Distância genética ponderada (raiz da média quadrática), em [0,1].
+ * RMS dá peso a diferenças concentradas em poucos genes (adaptação a um nicho) sem
+ * que mutações pequenas e difusas somem rapidamente.
+ */
 export function geneDistance(a: ArrayLike<number>, ao: number, b: ArrayLike<number>, bo: number): number {
   let s = 0;
-  for (let i = 0; i < GENE_COUNT; i++) s += W[i] * Math.abs(a[ao + i] - b[bo + i]);
-  return s / WSUM;
+  for (let i = 0; i < GENE_COUNT; i++) {
+    const d = a[ao + i] - b[bo + i];
+    s += W[i] * d * d;
+  }
+  return Math.sqrt(s / WSUM);
 }
 
 export interface MutationParams {

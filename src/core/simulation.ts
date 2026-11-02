@@ -306,7 +306,7 @@ export class Simulation {
 
     // --- predação
     const pred = tr[tb + T.PRED];
-    if (pred > 0.05) {
+    if (pred > P.PRED_MIN) {
       const cnt = this.cellCount[c];
       energy -= P.ATTACK_COST * pred * m23;
       if (cnt > 1) {

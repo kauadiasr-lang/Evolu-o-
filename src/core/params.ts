@@ -31,7 +31,8 @@ export const P = {
   CROWD_SOFT: 10,
   // --- predação
   ATTACK_COST: 0.05,
-  PREY_MASS_RATIO: 1.0,
+  PREY_MASS_RATIO: 0.45, // a presa precisa ser bem menor que o predador
+  PRED_MIN: 0.15, // abaixo disso não há aparato de captura
   PRED_ASSIM: 0.55,
   PRED_ENERGY_EFF: 0.35,
   PRED_ENERGY_STEAL: 0.4,
@@ -43,7 +44,8 @@ export const P = {
   BROWN: 0.025,
   // --- especiação
   SPECIATION_EVERY: 100,
-  SPECIATION_THRESHOLD: 0.1,
+  SPECIATION_MIN_DIST: 0.07, // separação mínima entre os agrupamentos (RMS dos genes)
+  SPECIATION_GAP: 1.5, // lacuna / dispersão interna (bimodalidade)
   SPECIATION_MIN_CLUSTER: 12,
   MIN_SPECIES_FOR_SPLIT: 40,
   // --- estatísticas
