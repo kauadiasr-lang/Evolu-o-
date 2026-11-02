@@ -28,7 +28,7 @@ export function localChronicle(d: Digest): Chronicle {
   if (d.populacao === 0) {
     return { title: 'O silêncio', text: `Após ${d.idade}, nenhum organismo restou. Os ${d.massa.detritos.toFixed(0)} de matéria orgânica e os nutrientes aguardam, sem ninguém para usá-los.`, source: 'local', tick: d.tick };
   }
-  parts.push(`Após ${d.idade}, o oceano abriga ${d.populacao} organismos distribuídos em ${d.especiesVivas} espécies.`);
+  parts.push(`Após ${d.idade}, o oceano abriga ${d.populacao} organismos distribuídos em ${d.especiesVivas} ${d.especiesVivas === 1 ? 'espécie' : 'espécies'}.`);
   if (top) {
     const share = ((top.individuos / Math.max(1, d.populacao)) * 100).toFixed(0);
     parts.push(`${top.nome}, ${TIPO[top.tipo] ?? top.tipo}, é a mais abundante (${top.individuos} indivíduos, ${share}% do total).`);
