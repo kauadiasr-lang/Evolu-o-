@@ -1,6 +1,6 @@
 import { Simulation } from './simulation';
 
-export type LayerKind = 'ocean' | 'temp' | 'light' | 'nutrient' | 'detritus' | 'biomass' | 'biodiversity' | 'density' | 'species';
+export type LayerKind = 'ocean' | 'temp' | 'light' | 'nutrient' | 'detritus' | 'biomass' | 'biodiversity' | 'density' | 'species' | 'biome' | 'moisture' | 'vegetation';
 
 export const LAYER_INFO: Record<LayerKind, { label: string; unit: string }> = {
   ocean: { label: 'Oceano (profundidade)', unit: '' },
@@ -12,6 +12,9 @@ export const LAYER_INFO: Record<LayerKind, { label: string; unit: string }> = {
   biodiversity: { label: 'Biodiversidade (espécies/célula)', unit: '' },
   density: { label: 'Densidade populacional', unit: '' },
   species: { label: 'Distribuição da espécie', unit: '' },
+  biome: { label: 'Biomas', unit: '' },
+  moisture: { label: 'Umidade do solo', unit: '' },
+  vegetation: { label: 'Cobertura vegetal', unit: '' },
 };
 
 export interface LayerResult {
@@ -39,6 +42,18 @@ export function computeLayer(sim: Simulation, kind: LayerKind, speciesId: number
     case 'light': stat(pl.light); return { min: 0, max: Math.max(max, 0.01) };
     case 'nutrient': stat(pl.nutrient); return { min: 0, max: Math.max(max, 0.01) };
     case 'detritus': stat(pl.detritus); return { min: 0, max: Math.max(max, 0.01) };
+    case 'moisture': {
+      for (let i = 0; i < n; i++) out[i] = pl.land[i] ? pl.soilWater[i] : 1;
+      return { min: 0, max: 1 };
+    }
+    case 'vegetation': {
+      for (let i = 0; i < n; i++) out[i] = sim.flora ? sim.flora.cover[i] : 0;
+      return { min: 0, max: 1 };
+    }
+    case 'biome': {
+      out.fill(0);
+      return { min: 0, max: 11 };
+    }
   }
   out.fill(0);
   const pool = sim.pool;
@@ -63,6 +78,7 @@ export function computeLayer(sim: Simulation, kind: LayerKind, speciesId: number
       }
     }
   }
+  if (kind === 'biomass' && sim.flora) for (let i = 0; i < n; i++) out[i] += sim.flora.cellMass[i];
   max = 0;
   for (let i = 0; i < n; i++) if (out[i] > max) max = out[i];
   return { min: 0, max: Math.max(max, kind === 'biodiversity' ? 3 : 1) };

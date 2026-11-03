@@ -1,9 +1,10 @@
 import { Simulation } from '../src/core/simulation';
 import { stateHash } from '../tests/helpers';
 const ticks = Number(process.argv[2] ?? 1500);
+const stage3 = process.argv[3] === 'stage3';
 const out: Record<string, string> = {};
 for (const seed of [1, 2, 3]) {
-  const sim = new Simulation({ seed });
+  const sim = new Simulation({ seed, stage3 });
   let maxPop = 0, minPop = Infinity;
   for (let t = 0; t < ticks; t++) {
     sim.step();

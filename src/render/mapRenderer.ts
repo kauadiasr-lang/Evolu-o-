@@ -2,6 +2,30 @@ import type { LayerKind } from '../core/layers';
 import { V, VIS } from '../core/snapshot';
 import type { FrameMsg } from '../app/simClient';
 import { dotColor, drawCreature } from './morphology';
+import { BIOME_INFO } from '../core/biomes';
+import { drawPlant, PV } from './plants';
+import { PVIS } from '../core/flora';
+
+export interface TerrainMsg {
+  w: number;
+  h: number;
+  biome: Uint8Array;
+  land: Uint8Array;
+  cover: Uint8Array;
+  hue: Uint8Array;
+  height: Uint8Array;
+  moist: Uint8Array;
+  temp: Int8Array;
+}
+
+function hsl2rgb(h: number, s: number, l: number): [number, number, number] {
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+  };
+  return [f(0) * 255, f(8) * 255, f(4) * 255];
+}
 
 type RGB = [number, number, number];
 const RAMPS: Record<string, RGB[]> = {
@@ -49,7 +73,7 @@ export interface Quality {
 export const QUALITY: Record<QualityLevel, Quality> = {
   high: { detailMax: 1400, dprCap: 2, minFrameMs: 16, animate: true, workerFrameMs: 33, workerStatsMs: 400, workerBudgetMs: 16, uiStatsMs: 700 },
   medium: { detailMax: 450, dprCap: 1.5, minFrameMs: 28, animate: true, workerFrameMs: 50, workerStatsMs: 700, workerBudgetMs: 12, uiStatsMs: 1000 },
-  low: { detailMax: 0, dprCap: 1, minFrameMs: 45, animate: false, workerFrameMs: 80, workerStatsMs: 1000, workerBudgetMs: 10, uiStatsMs: 1500 },
+  low: { detailMax: 120, dprCap: 1, minFrameMs: 45, animate: false, workerFrameMs: 80, workerStatsMs: 1000, workerBudgetMs: 10, uiStatsMs: 1500 },
 };
 
 export class MapRenderer {
@@ -63,6 +87,7 @@ export class MapRenderer {
   cy = 30;
   zoom = 10; // pixels por célula
   frame: FrameMsg | null = null;
+  terrain: TerrainMsg | null = null;
   layerKind: LayerKind = 'ocean';
   species = 0;
   hoverCell: { x: number; y: number } | null = null;
@@ -153,6 +178,36 @@ export class MapRenderer {
     this.paintLayer(f);
   }
 
+  setTerrain(t: TerrainMsg): void {
+    this.terrain = t;
+    this.dirty = true;
+    if (this.frame) this.paintLayer(this.frame);
+  }
+
+  /** Cor do solo + vegetação real de uma célula de terra (umidade, temperatura, cobertura, altura, matiz). */
+  private landColor(i: number): [number, number, number] {
+    const t = this.terrain!;
+    const wet = t.moist[i] / 255, T = t.temp[i], cov = t.cover[i] / 255, hgt = t.height[i] / 255;
+    let r = 214 + (96 - 214) * wet, g = 190 + (72 - 190) * wet, b = 140 + (52 - 140) * wet;
+    const cold = Math.max(0, Math.min(1, (6 - T) / 14));
+    r += (206 - r) * cold; g += (216 - g) * cold; b += (222 - b) * cold;
+    if (t.biome[i] === 11) { r = r * 0.55 + 22; g = g * 0.6 + 40; b = b * 0.6 + 52; } // pântano: solo encharcado
+    if (cov > 0.02) {
+      const [vr, vg, vb] = hsl2rgb((t.hue[i] / 255) * 360, 0.5, 0.2 + 0.2 * (1 - hgt) * (1 - 0.4 * cov));
+      const a = Math.min(0.93, cov * 1.15);
+      r += (vr - r) * a; g += (vg - g) * a; b += (vb - b) * a;
+    }
+    return [r, g, b];
+  }
+
+  /** Matiz (graus) do substrato sob (x,y): base da camuflagem (mesma regra do motor: água, solo ou vegetação). */
+  bgHueAt(x: number, y: number): number {
+    const t = this.terrain, f = this.frame;
+    const i = Math.min(this.h - 1, Math.max(0, Math.floor(y))) * this.w + (((Math.floor(x) % this.w) + this.w) % this.w);
+    if (t && t.land[i]) return t.cover[i] > 77 ? (t.hue[i] / 255) * 360 : 34;
+    return 200 - 25 * (f ? f.depth[i] : 0);
+  }
+
   legend(): { name: string; min: number; max: number } {
     const f = this.frame;
     return { name: this.layerKind, min: f?.lmin ?? 0, max: f?.lmax ?? 1 };
@@ -166,9 +221,13 @@ export class MapRenderer {
     const range = Math.max(1e-9, f.lmax - f.lmin);
     for (let i = 0; i < n; i++) {
       // sempre há oceano de fundo; camadas analíticas o cobrem parcialmente
-      const base = rampColor('ocean', f.depth[i] * (0.4 + 0.6 * f.depth[i]));
+      const isLand = !!this.terrain && this.terrain.land[i] === 1;
+      const base = isLand ? this.landColor(i) : rampColor('ocean', f.depth[i] * (0.4 + 0.6 * f.depth[i]));
       let r = base[0], g = base[1], b = base[2];
-      if (kind !== 'ocean') {
+      if (kind === 'biome' && this.terrain) {
+        const c = BIOME_INFO[this.terrain.biome[i]].color;
+        r = r * 0.35 + c[0] * 0.65; g = g * 0.35 + c[1] * 0.65; b = b * 0.35 + c[2] * 0.65;
+      } else if (kind !== 'ocean') {
         let t = (f.layer[i] - f.lmin) / range;
         if (kind === 'density' || kind === 'biomass' || kind === 'species' || kind === 'biodiversity') t = Math.sqrt(Math.max(0, t));
         const c = rampColor(kind, t);
@@ -220,6 +279,30 @@ export class MapRenderer {
       }
     }
 
+    // plantas (Etapa 3): pontos em zoom baixo, esboços procedurais em zoom alto
+    const pl = f.plants;
+    if (pl && pl.n > 0 && z >= 7) {
+      const full = z >= 13;
+      let sprites = 0;
+      for (const k of copies) {
+        for (let i = 0; i < pl.n; i++) {
+          const [sx, sy] = this.worldToScreen(pl.x[i] + k * this.w, pl.y[i]);
+          if (sx < -30 || sy < -30 || sx > rect.width + 30 || sy > rect.height + 60) continue;
+          if (full && sprites < (this.quality.detailMax > 200 ? 2600 : 900)) {
+            sprites++;
+            ctx.globalAlpha = this.species ? 0.5 : 1;
+            drawPlant(ctx, pl.vis, i * PVIS, sx, sy, z * 0.95, this.animate ? time : 0);
+          } else {
+            const hh = pl.vis[i * PVIS + PV.HEIGHT] / 255;
+            ctx.fillStyle = `hsl(${(24 + 112 * (pl.vis[i * PVIS + PV.PIGMENT] / 255)).toFixed(0)},55%,${(40 - 8 * (pl.vis[i * PVIS + PV.SHADE] / 255)).toFixed(0)}%)`;
+            const sz = 1.5 + hh * 4.5;
+            ctx.fillRect(sx - sz / 2, sy - sz, sz, sz);
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
     // organismos
     const zf = Math.sqrt(Math.max(0.4, z / 8));
     const sel = this.species;
@@ -237,7 +320,7 @@ export class MapRenderer {
         ctx.globalAlpha = dim ? 0.22 : 1;
         if (R >= 5.5 && detailed < this.quality.detailMax) {
           detailed++;
-          drawCreature(ctx, vis, o, sx, sy, R, (f.ang[i] / 255 - 0.5) * Math.PI * 2, this.animate ? time : 0, isSel && z > 18);
+          drawCreature(ctx, vis, o, sx, sy, R, (f.ang[i] / 255 - 0.5) * Math.PI * 2, this.animate ? time : 0, isSel && z > 18, vis[o + V.CAMO] > 25 ? this.bgHueAt(f.x[i], f.y[i]) : undefined);
         } else if (R >= 1.8) {
           const c = dotColor(vis, o);
           if (c !== lastColor) { ctx.fillStyle = c; lastColor = c; }

@@ -123,6 +123,29 @@ export class AIDirector {
     return this.call('describe', buildDigest(st, 0), speciesName);
   }
 
+  /** Analisa uma espécie: adaptações expressas, por que prosperou, custos. Só texto. */
+  async analyzeSpecies(st: StatsPayload, nameOrId = ''): Promise<Chronicle> {
+    const digest = buildDigest(st, 0);
+    const text = await this.call('species', digest, nameOrId);
+    return this.wrap(st, digest, text, `Análise: ${nameOrId || 'espécie dominante'}`, 'A IA está indisponível. ' + localChronicle(digest).text);
+  }
+
+  /** Narra transformações de biomas a partir dos números reais. Só texto. */
+  async narrateBiomes(st: StatsPayload): Promise<Chronicle> {
+    const digest = buildDigest(st, 0);
+    const text = await this.call('biomes', digest);
+    return this.wrap(st, digest, text, 'Biomas do planeta', 'A IA está indisponível. ' + localChronicle(digest).text);
+  }
+
+  private wrap(st: StatsPayload, digest: Digest, text: string | null, title: string, fallback: string): Chronicle {
+    if (!text) return { title, text: fallback, source: 'local', tick: st.tick };
+    const c: Chronicle = { title, text: text.trim(), source: 'ai', tick: st.tick };
+    const bad = ungroundedNumbers(c.text, digest);
+    if (bad.length) c.warnings = bad;
+    this.chronicles.push(c);
+    return c;
+  }
+
   /** A IA propõe hipóteses; elas só viram ação depois da validação do motor. */
   async hypotheses(st: StatsPayload): Promise<{ items: SuggestionItem[]; text: string }> {
     const digest = buildDigest(st, 0);
@@ -148,8 +171,9 @@ export function parseSuggestions(text: string): SuggestionItem[] {
       if (a.type === 'climate_shift' && num(a.deltaT)) out.push({ suggestion: { type: 'climate_shift', deltaT: a.deltaT, ...meta }, rationale });
       else if (a.type === 'eruption' && num(a.x) && num(a.y) && num(a.amount)) out.push({ suggestion: { type: 'eruption', x: a.x, y: a.y, amount: a.amount, ...meta }, rationale });
       else if (a.type === 'nutrient_upwelling' && num(a.x) && num(a.y) && num(a.amount)) out.push({ suggestion: { type: 'nutrient_upwelling', x: a.x, y: a.y, radius: num(a.radius) ? a.radius : 4, amount: a.amount, ...meta }, rationale });
-      else if (a.type === 'adaptation' && num(a.speciesId) && typeof a.gene === 'string' && num(a.delta))
-        out.push({ suggestion: { type: 'adaptation', speciesId: a.speciesId, gene: a.gene, delta: a.delta, individuals: num(a.individuals) ? a.individuals : 3, ...meta }, rationale });
+      else if ((a.type === 'hypothesis' || a.type === 'adaptation') && typeof (a.text ?? a.narrative ?? a.rationale) === 'string')
+        // hipóteses sobre adaptações são só texto: a IA nunca edita genomas
+        out.push({ suggestion: { type: 'hypothesis', speciesId: num(a.speciesId) ? a.speciesId : undefined, text: String(a.text ?? a.narrative ?? a.rationale).slice(0, 400), ...meta }, rationale });
     }
     return out;
   } catch {

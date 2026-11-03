@@ -1,4 +1,4 @@
-import { G, GENE_COUNT, GENE_INFO } from './genome';
+import { GENE_COUNT } from './genome';
 import { Simulation } from './simulation';
 
 /**
@@ -15,7 +15,7 @@ export type Suggestion = (
   | { type: 'climate_shift'; deltaT: number }
   | { type: 'eruption'; x: number; y: number; amount: number }
   | { type: 'nutrient_upwelling'; x: number; y: number; radius?: number; amount: number }
-  | { type: 'adaptation'; speciesId: number; gene: string; delta: number; individuals?: number }
+  | { type: 'hypothesis'; speciesId?: number; text: string }
 ) &
   SuggestionMeta;
 
@@ -50,16 +50,8 @@ export function validateSuggestion(sim: Simulation, s: Suggestion): Verdict {
       if (s.amount > pl.reservoir * 0.3) return { ok: false, reason: 'O sedimento disponível não sustenta essa liberação (máx. 30% do reservatório).' };
       return { ok: true, reason: 'Redistribuição de nutrientes a partir do sedimento (massa conservada).' };
     }
-    case 'adaptation': {
-      const sp = sim.species.list[s.speciesId - 1];
-      if (!sp || sp.extinctTick >= 0) return { ok: false, reason: 'A espécie não existe ou está extinta.' };
-      const gi = GENE_INFO.findIndex((g) => g.key === s.gene);
-      if (gi < 0) return { ok: false, reason: `Gene desconhecido: ${s.gene}.` };
-      if (gi === G.MUT) return { ok: false, reason: 'A taxa de mutação não pode ser manipulada.' };
-      if (Math.abs(s.delta) > 0.12 || s.delta === 0) return { ok: false, reason: 'Mutações são graduais: |Δ| ≤ 0,12.' };
-      if (sp.count < 20) return { ok: false, reason: 'População pequena demais para sustentar a variante.' };
-      return { ok: true, reason: 'Variante pequena: será introduzida em poucos indivíduos e sujeita à seleção natural.' };
-    }
+    case 'hypothesis':
+      return { ok: false, reason: 'Hipóteses sobre adaptações são apenas texto: a IA não altera genomas. O motor evolutivo decide quais características surgem.' };
   }
   return { ok: false, reason: 'Tipo de sugestão desconhecido.' };
 }
@@ -71,10 +63,6 @@ export function applySuggestion(sim: Simulation, s: Suggestion): Verdict {
   if (s.type === 'climate_shift') sim.setClimate(sim.planet.climateTarget + s.deltaT);
   else if (s.type === 'eruption') sim.eruption(s.x, s.y, 4, s.amount);
   else if (s.type === 'nutrient_upwelling') sim.upwelling(s.x, s.y, Math.round(s.radius ?? 4), s.amount);
-  else if (s.type === 'adaptation') {
-    const gi = GENE_INFO.findIndex((g) => g.key === s.gene);
-    sim.introduceVariant(s.speciesId, gi, s.delta, Math.min(5, s.individuals ?? 3));
-  }
   return v;
 }
 export { GENE_COUNT };

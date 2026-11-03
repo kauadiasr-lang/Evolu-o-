@@ -93,6 +93,20 @@ for (const name of ['Pixel 7', 'Pixel 7 landscape', 'Galaxy S9+']) {
   await page.tap('#layers [data-l=temp]');
   await page.waitForTimeout(500);
   check(`${tag} camada de temperatura troca por toque`, (await page.$eval('#lg-title', (e) => e.textContent)).includes('Temperatura'));
+  // Etapa 3: camada de biomas e aba de flora acessíveis por toque
+  await page.tap('#layers [data-l=biome]');
+  await page.waitForTimeout(500);
+  check(`${tag} camada de biomas por toque`, (await page.$eval('#lg-title', (e) => e.textContent)).includes('Biomas'));
+  check(`${tag} chips de camadas Etapa 3 ≥40px`, (await rect(page, '#layers [data-l=vegetation]')).h >= 40);
+  await page.tap('#mnav button[data-m=side]');
+  await page.waitForTimeout(400);
+  await page.tap('#side-tabs [data-tab=fl]');
+  await page.waitForTimeout(500);
+  check(`${tag} aba Flora abre por toque`, await page.$eval('#pane-fl', (e) => e.classList.contains('on')));
+  await page.tap('#side .sheet-x');
+  await page.waitForTimeout(300);
+  await page.tap('#mnav button[data-m=tools]');
+  check(`${tag} ferramenta "Semear plano corporal" disponível`, (await rect(page, '#trow [data-t=archetype]')).vis);
   await page.tap('#mnav button[data-m=map]');
   // menu ⋯
   await page.tap('#b-menu');

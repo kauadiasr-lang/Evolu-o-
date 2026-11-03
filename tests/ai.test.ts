@@ -4,27 +4,8 @@ import { localChronicle } from '../src/ai/chronicler';
 import { AIDirector, parseSuggestions } from '../src/ai/director';
 import { applySuggestion, validateSuggestion } from '../src/core/validate';
 import { createHandler } from '../server/ai-proxy.mjs';
-import { smallSim } from './helpers';
-import { GENE_COUNT } from '../src/core/genome';
-import { visFromGenes, VIS } from '../src/core/snapshot';
-import type { StatsPayload } from '../src/worker/protocol';
-import type { Simulation } from '../src/core/simulation';
-
-/** Reproduz o que o worker envia, para testar o digest sobre dados reais do motor. */
-function statsOf(s: Simulation): StatsPayload {
-  const species = s.species.list.map((sp) => {
-    const vis = new Uint8Array(VIS);
-    visFromGenes(sp.centroid, 0, vis, 0);
-    return { id: sp.id, name: sp.name, parentId: sp.parentId, bornTick: sp.bornTick, extinctTick: sp.extinctTick, count: sp.count, peak: sp.peak, trophic: sp.trophic, cause: sp.cause, vis: Array.from(vis), centroid: Array.from(sp.centroid), src: [0, 0, 0] as [number, number, number] };
-  });
-  return {
-    tick: s.tick, pop: s.pool.count, mass: s.massBreakdown(), speciesAlive: s.species.aliveCount(), speciesTotal: s.species.size, maxGen: s.maxGeneration,
-    births: s.birthsTotal, mutations: s.mutationsTotal, deaths: { ...s.deathsTotal },
-    planet: { climateTarget: 0, climateOffset: 0, pressure: s.planet.pressure, meanTemp: 20, season: 0 },
-    species, history: { ticks: s.history.ticks, series: s.history.series }, events: s.events.items.slice(-50), eventCount: s.events.items.length,
-    web: { nodes: [], edges: [] }, extinct: false,
-  };
-}
+import { smallSim, stage3Sim, statsOf } from './helpers';
+import { BASE_GENES, GENE_COUNT } from '../src/core/genome';
 
 describe('digest e narrativa ancorada nos dados', () => {
   const sim = smallSim({ seed: 12 });
@@ -37,7 +18,7 @@ describe('digest e narrativa ancorada nos dados', () => {
     expect(d.especiesVivas).toBe(sim.species.aliveCount());
     expect(d.massa.organismos).toBeCloseTo(sim.massBreakdown().organisms, 1);
     for (const e of d.especiesPrincipais) expect(sim.species.get(e.id).count).toBe(e.individuos);
-    expect(GENE_COUNT).toBe(24);
+    expect(BASE_GENES).toBe(24);
   });
 
   it('o cronista local usa somente fatos do digest', () => {
@@ -67,30 +48,29 @@ describe('a IA não altera o mundo sem validação do motor', () => {
     const T0 = sim.planet.climateTarget;
     expect(validateSuggestion(sim, { type: 'climate_shift', deltaT: 40 }).ok).toBe(false);
     expect(validateSuggestion(sim, { type: 'eruption', x: 3, y: 3, amount: 50 }).ok).toBe(false); // pressão insuficiente
-    expect(validateSuggestion(sim, { type: 'adaptation', speciesId: 1, gene: 'NAO_EXISTE', delta: 0.05 }).ok).toBe(false);
-    expect(validateSuggestion(sim, { type: 'adaptation', speciesId: 1, gene: 'DEFENSE', delta: 0.9 }).ok).toBe(false);
-    expect(validateSuggestion(sim, { type: 'adaptation', speciesId: 999, gene: 'DEFENSE', delta: 0.05 }).ok).toBe(false);
+    expect(validateSuggestion(sim, { type: 'nutrient_upwelling', x: 5, y: 5, amount: 9999 }).ok).toBe(false);
     expect(applySuggestion(sim, { type: 'climate_shift', deltaT: 40 }).ok).toBe(false);
     expect(sim.planet.climateTarget).toBe(T0);
   });
 
-  it('adaptação sugerida vira apenas uma variante rara sujeita à seleção natural', () => {
+  it('a IA NUNCA altera genomas: hipóteses sobre adaptações são só texto e o motor as recusa como ação', () => {
     const sim = smallSim({ seed: 8 });
     sim.run(600);
+    const genes0 = Array.from(sim.pool.genes.subarray(0, sim.pool.used * GENE_COUNT));
     const sp = sim.species.list.find((s) => s.count > 40)!;
-    const before = [...Array(sim.pool.used).keys()].filter((i) => sim.pool.alive[i] && sim.pool.species[i] === sp.id).map((i) => sim.pool.genes[i * 24 + 11]);
-    const v = applySuggestion(sim, { type: 'adaptation', speciesId: sp.id, gene: 'DEFENSE', delta: 0.1, individuals: 3 });
-    expect(v.ok).toBe(true);
-    const after = [...Array(sim.pool.used).keys()].filter((i) => sim.pool.alive[i] && sim.pool.species[i] === sp.id).map((i) => sim.pool.genes[i * 24 + 11]);
-    const changed = after.filter((x, i) => Math.abs(x - before[i]) > 1e-6).length;
-    expect(changed).toBeGreaterThan(0);
-    expect(changed).toBeLessThanOrEqual(3); // nunca vira a espécie inteira
+    const v = applySuggestion(sim, { type: 'hypothesis', speciesId: sp.id, text: 'Uma carapaça mais espessa poderia compensar a predação.' });
+    expect(v.ok).toBe(false);
+    expect(v.reason).toMatch(/não altera genomas/);
+    expect(Array.from(sim.pool.genes.subarray(0, sim.pool.used * GENE_COUNT))).toEqual(genes0);
+    expect((sim as any).introduceVariant).toBeUndefined(); // o caminho de edição de genes não existe mais
   });
 
   it('o parser aceita JSON válido e descarta lixo', () => {
-    const text = 'Hipótese...\n```json\n[{"type":"climate_shift","deltaT":-2,"rationale":"x"},{"type":"hack","x":1},{"type":"adaptation","speciesId":2,"gene":"DEFENSE","delta":0.05}]\n```';
+    const text = 'Hipótese...\n```json\n[{"type":"climate_shift","deltaT":-2,"rationale":"x"},{"type":"hack","x":1},{"type":"adaptation","speciesId":2,"gene":"DEFENSE","delta":0.05,"text":"carapaça"}]\n```';
     const items = parseSuggestions(text);
-    expect(items.map((i) => i.suggestion.type)).toEqual(['climate_shift', 'adaptation']);
+    // propostas de "adaptação" viram hipóteses (texto): nunca comandos sobre genes
+    expect(items.map((i) => i.suggestion.type)).toEqual(['climate_shift', 'hypothesis']);
+    expect(JSON.stringify(items[1].suggestion)).not.toContain('DEFENSE');
     expect(parseSuggestions('sem json')).toEqual([]);
   });
 });
@@ -199,5 +179,76 @@ describe('proxy da IA no backend', () => {
     const bad = fakeRes();
     await h(req('POST', '/api/ai', { mode: 'rm -rf', digest: {} }) as any, bad);
     expect(bad.code).toBe(400);
+  });
+});
+
+
+describe('Fase 6: a IA analisa espécies e biomas com dados reais (e funciona sem IA)', () => {
+  const sim = stage3Sim({ initialPopulation: 700, seed: 3 });
+  sim.run(1200);
+  sim.flora!.colonize(sim.planet, sim.tick, 40);
+  sim.seedArchetype('amphibian', 20, 12, 12, 2);
+  sim.run(800);
+  const st = statsOf(sim);
+  const d = buildDigest(st);
+
+  it('o digest inclui anatomia real, flora e biomas calculados pelo motor', () => {
+    expect(d.biomas && d.biomas.length).toBeGreaterThan(2);
+    expect(d.terra?.areaTerrestrialPercentual).toBeGreaterThan(20);
+    expect(d.flora?.plantas).toBe(sim.flora!.pool.count);
+    for (const e of d.especiesPrincipais) {
+      const sp = sim.species.get(e.id);
+      expect(e.individuos).toBe(sp.count);
+      expect(e.anatomia).toBeDefined();
+    }
+    // as áreas de bioma do digest vêm do estado: somam ≤ 100%
+    expect(d.biomas!.reduce((a, b) => a + b.percentualSuperficie, 0)).toBeLessThanOrEqual(100.5);
+  });
+
+  it('o cronista local (sem IA) descreve biomas e flora usando só números do digest', () => {
+    const c = localChronicle(d);
+    expect(c.text).toMatch(/flora soma/);
+    expect(ungroundedNumbers(c.text, d)).toEqual([]);
+  });
+
+  it('com IA: análise de espécie e narrativa de biomas usam o proxy e marcam números inventados', async () => {
+    const dir = new AIDirector();
+    dir.enabled = true;
+    dir.status = { configured: true, reachable: true };
+    const sent: any[] = [];
+    dir.fetchImpl = (async (_u: any, init: any) => {
+      const body = JSON.parse(init.body);
+      sent.push(body);
+      const text = body.mode === 'species' ? `Esta espécie tem ${d.especiesPrincipais[0].individuos} indivíduos.` : 'Os biomas mudaram em 987654 células.';
+      return new Response(JSON.stringify({ text }), { status: 200 });
+    }) as typeof fetch;
+    const a = await dir.analyzeSpecies(st, d.especiesPrincipais[0].nome);
+    expect(a.source).toBe('ai');
+    expect(a.warnings).toBeUndefined();
+    await new Promise((r) => setTimeout(r, 2100));
+    const b = await dir.narrateBiomes(st);
+    expect(b.warnings).toContain('987654');
+    expect(sent.map((x) => x.mode)).toEqual(['species', 'biomes']);
+    expect(JSON.stringify(sent[0].digest)).toContain('anatomia');
+    expect(JSON.stringify(sent[1].digest)).toContain('biomas');
+  }, 10000);
+
+  it('offline: análise e narração caem no texto local, sem erro', async () => {
+    const dir = new AIDirector();
+    const a = await dir.analyzeSpecies(st, '');
+    const b = await dir.narrateBiomes(st);
+    expect(a.source).toBe('local');
+    expect(b.source).toBe('local');
+  });
+
+  it('os prompts proíbem alterar genomas e não oferecem comandos de gene', async () => {
+    const { buildPrompt, SYSTEM, MODES } = await import('../server/prompts.mjs');
+    expect(SYSTEM).toMatch(/NUNCA altera genomas/);
+    for (const m of MODES) {
+      const p = buildPrompt(m, { x: 1 }, 'q');
+      expect(p).not.toMatch(/"gene"\s*:/);
+      expect(p).not.toMatch(/"delta"\s*:\s*0\.\d+.*"gene"/);
+    }
+    expect(MODES).toEqual(expect.arrayContaining(['species', 'biomes']));
   });
 });

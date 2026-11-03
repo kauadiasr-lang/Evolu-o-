@@ -1,6 +1,7 @@
 import { GENE_INFO } from '../core/genome';
 import type { SimEvent } from '../core/stats';
 import type { SpeciesInfo, StatsPayload } from '../worker/protocol';
+import { BIOME_INFO } from '../core/biomes';
 
 /** 1 tick = 4.000 anos de tempo planetário (escala narrativa). */
 export const YEARS_PER_TICK = 4000;
@@ -25,12 +26,21 @@ export interface Digest {
   especiesPrincipais: {
     id: number; nome: string; tipo: string; individuos: number; percentualPopulacao: number; pico: number; origem: string | null; nascimento: number;
     tracos: Record<string, number>;
+    /** estruturas realmente expressas pelo genoma médio, e plano corporal */
+    anatomia?: { planoCorporal: string; estruturas: string[] };
   }[];
   nascimentosRecentes: { nome: string; tick: number; origem: string }[];
   extincoesRecentes: { nome: string; tick: number; pico: number; causa: string }[];
   eventos: { tick: number; tipo: string; titulo: string; texto: string }[];
   mortalidade: Record<string, number>;
   mortalidadePercentual: Record<string, number>;
+  /** Etapa 3: só presentes em mundos com continentes */
+  biomas?: { nome: string; percentualSuperficie: number; variacaoRecente: number | null }[];
+  terra?: { temperaturaMedia: number; umidadeSoloMedia: number; coberturaVegetalPercentual: number; areaTerrestrialPercentual: number };
+  flora?: {
+    plantas: number; biomassa: number; linhagensVivas: number; formas: Record<string, number>;
+    principais: { id: number; nome: string; forma: string; individuos: number; tracos: Record<string, number> }[];
+  };
   predacao: { predador: string; presa: string; fluxo: number }[];
 }
 
@@ -64,7 +74,31 @@ export function buildDigest(st: StatsPayload, sinceTick = 0): Digest {
   };
   const evs = st.events.filter((e) => e.tick > sinceTick);
   const recentWindow = Math.max(sinceTick, st.tick - 1500);
+  const stage3Part: Partial<Digest> = {};
+  if (st.stage3 && st.biomes.length) {
+    const ser = st.history.series;
+    const keyOf: Record<string, string> = { Floresta: 'bForest', Pradaria: 'bGrass', Arbustal: 'bShrub', Deserto: 'bDesert', Tundra: 'bTundra', 'Pântano': 'bSwamp' };
+    stage3Part.biomas = BIOME_INFO.map((b) => ({ nome: b.label, a: st.biomes[b.id] ?? 0 }))
+      .filter((b) => b.a > 0.003)
+      .sort((a, b) => b.a - a.a)
+      .map((b) => ({ nome: b.nome, percentualSuperficie: Math.round(b.a * 1000) / 10, variacaoRecente: keyOf[b.nome] ? trend(ser[keyOf[b.nome]], 60) : null }));
+    stage3Part.terra = {
+      temperaturaMedia: r2(ser.landTemp?.[ser.landTemp.length - 1] ?? 0), umidadeSoloMedia: r2(ser.landWater?.[ser.landWater.length - 1] ?? 0),
+      coberturaVegetalPercentual: Math.round((st.flora?.cover ?? 0) * 100), areaTerrestrialPercentual: Math.round(st.landFraction * 100),
+    };
+    if (st.flora && st.flora.colonized) {
+      const gi = (g: number[], k: number) => r2(g[k]);
+      stage3Part.flora = {
+        plantas: st.flora.plants, biomassa: r2(st.flora.mass), linhagensVivas: st.flora.lineagesAlive, formas: st.flora.forms,
+        principais: st.flora.lineages.filter((l) => l.extinctTick < 0).slice(0, 5).map((l) => ({
+          id: l.id, nome: l.name, forma: l.form, individuos: l.count,
+          tracos: { altura: gi(l.genes, 0), larguraFolha: gi(l.genes, 1), densidadeFoliar: gi(l.genes, 2), raizes: gi(l.genes, 3), tolerânciaSombra: gi(l.genes, 5), toleranciaSeca: gi(l.genes, 6) },
+        })),
+      };
+    }
+  }
   return {
+    ...stage3Part,
     tick: st.tick,
     idade: formatAge(st.tick),
     populacao: st.pop,
@@ -82,6 +116,7 @@ export function buildDigest(st: StatsPayload, sinceTick = 0): Digest {
     especiesPrincipais: alive.slice(0, 6).map((s) => ({
       id: s.id, nome: s.name, tipo: s.trophic, individuos: s.count, percentualPopulacao: Math.round((s.count / Math.max(1, st.pop)) * 100), pico: s.peak,
       origem: s.parentId ? byId.get(s.parentId)?.name ?? null : null, nascimento: s.bornTick, tracos: traits(s),
+      ...(st.stage3 ? { anatomia: { planoCorporal: s.plan, estruturas: s.structures } } : {}),
     })),
     nascimentosRecentes: st.species.filter((s) => s.bornTick > recentWindow && s.parentId).slice(-6).map((s) => ({ nome: s.name, tick: s.bornTick, origem: byId.get(s.parentId)?.name ?? '?' })),
     extincoesRecentes: st.species.filter((s) => s.extinctTick > recentWindow).slice(-6).map((s) => ({ nome: s.name, tick: s.extinctTick, pico: s.peak, causa: s.cause })),

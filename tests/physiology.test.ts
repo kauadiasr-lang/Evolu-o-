@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { emptyWorld, ensureSpecies, feed, genome } from './helpers';
 import { Simulation } from '../src/core/simulation';
-import { DEFAULT_MUTATION } from '../src/core/genome';
+import { DEFAULT_MUTATION, GENE_COUNT } from '../src/core/genome';
 
 const NO_MUT = { ...DEFAULT_MUTATION, baseRate: 0, rateRange: 0 };
 
@@ -101,7 +101,7 @@ describe('reprodução', () => {
     expect(Math.abs(sim.totalMass() - total0) / total0).toBeLessThan(1e-9);
     // todos os descendentes têm o mesmo genoma (mutação desligada) e a mesma espécie
     for (const j of alive(sim)) {
-      for (let k = 0; k < 24; k++) expect(sim.pool.genes[j * 24 + k]).toBeCloseTo(g[k], 6);
+      for (let k = 0; k < 24; k++) expect(sim.pool.genes[j * GENE_COUNT + k]).toBeCloseTo(g[k], 6);
       expect(sim.pool.species[j]).toBe(1);
     }
     expect(sim.maxGeneration).toBeGreaterThan(0);

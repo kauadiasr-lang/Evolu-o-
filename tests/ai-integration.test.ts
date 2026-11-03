@@ -57,13 +57,14 @@ describe('IA → proxy → motor (HTTP real, provedor simulado)', () => {
     const sim = smallSim({ seed: 12 });
     sim.run(900);
     const m0 = sim.totalMass();
+    const genes0 = Array.from(sim.pool.genes.subarray(0, sim.pool.used * 36));
     const sp = sim.species.list.find((s) => s.count > 40)!;
     nextReply = 'Hipótese.\n```json\n' + JSON.stringify([
       { type: 'nutrient_upwelling', x: 10, y: 10, radius: 3, amount: 40, title: 'Ressurgência costeira', narrative: 'Águas profundas sobem.', rationale: 'nutrientes baixos' },
       { type: 'climate_shift', deltaT: 40, title: 'Inferno', narrative: 'x' },
       { type: 'eruption', x: 5, y: 5, amount: 80, title: 'Erupção sem pressão' },
-      { type: 'adaptation', speciesId: sp.id, gene: 'GENE_FALSO', delta: 0.05 },
-      { type: 'adaptation', speciesId: sp.id, gene: 'DEFENSE', delta: 0.06, individuals: 3, title: 'Parede mais espessa' },
+      { type: 'adaptation', speciesId: sp.id, gene: 'GENE_FALSO', delta: 0.05, text: 'Um gene inexistente (legado): vira hipótese de texto' },
+      { type: 'hypothesis', speciesId: sp.id, text: 'Uma parede mais espessa poderia favorecer a espécie.', title: 'Parede mais espessa' },
     ]) + '\n```';
     const d = await director(proxyUrl);
     const items = await d.events(statsOf(sim));
@@ -71,20 +72,22 @@ describe('IA → proxy → motor (HTTP real, provedor simulado)', () => {
 
     const mgr = new EcoEventManager({ minGap: 0, maxPerWindow: 10 });
     const verdicts = items.map((it) => mgr.submit(sim, it.suggestion));
-    expect(verdicts.map((v) => v.ok)).toEqual([true, false, false, false, true]);
+    expect(verdicts.map((v) => v.ok)).toEqual([true, false, false, false, false]);
     expect(verdicts[1].reason).toMatch(/±6/);
     expect(verdicts[2].reason).toMatch(/pressão/i);
-    expect(verdicts[3].reason).toMatch(/Gene desconhecido/);
+    expect(verdicts[3].reason).toMatch(/não altera genomas/); // adaptação = hipótese de texto
+    expect(verdicts[4].reason).toMatch(/não altera genomas/);
+    expect(Array.from(sim.pool.genes.subarray(0, genes0.length))).toEqual(genes0); // nenhum gene foi tocado
     expect(Math.abs(sim.totalMass() - m0) / m0).toBeLessThan(1e-9);
     const evs = sim.events.items.filter((e) => e.type === 'ai_event');
-    expect(evs.length).toBe(2);
+    expect(evs.length).toBe(1);
     expect(evs[0].title).toContain('Ressurgência costeira');
 
     // impacto OBSERVADO, medido pelo motor (não narrado pela IA)
     sim.run(700);
     mgr.tick(sim);
     const impacts = sim.events.items.filter((e) => e.type === 'ai_impact');
-    expect(impacts.length).toBe(2);
+    expect(impacts.length).toBe(1);
     expect(impacts[0].text).toMatch(/população \d+ → \d+/);
     expect(impacts[0].text).toMatch(/decidido pela simulação/);
     expect(Math.abs(sim.totalMass() - m0) / m0).toBeLessThan(1e-9);

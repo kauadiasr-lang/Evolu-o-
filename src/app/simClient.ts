@@ -1,8 +1,10 @@
 import type { SaveData } from '../core/serialize';
 import type { Suggestion } from '../core/validate';
-import type { FromWorker, InspectInfo, CellInfo, StatsPayload, ToWorker } from '../worker/protocol';
+import type { FromWorker, InspectInfo, CellInfo, PlantInfo, StatsPayload, ToWorker } from '../worker/protocol';
 
 export type FrameMsg = Extract<FromWorker, { t: 'frame' }>;
+export type TerrainEvt = Extract<FromWorker, { t: 'terrain' }>;
+export type TrailEvt = Extract<FromWorker, { t: 'trail' }>;
 
 /** Ponte entre a interface e o worker de simulação. */
 export class SimClient {
@@ -10,7 +12,9 @@ export class SimClient {
   onFrame: (f: FrameMsg) => void = () => {};
   onStats: (s: StatsPayload) => void = () => {};
   onReady: (w: number, h: number) => void = () => {};
-  onInspect: (i: InspectInfo | null) => void = () => {};
+  onInspect: (i: InspectInfo | null, plant: PlantInfo | null) => void = () => {};
+  onTerrain: (t: TerrainEvt) => void = () => {};
+  onTrail: (t: TrailEvt) => void = () => {};
   onCell: (c: CellInfo) => void = () => {};
   private pending = new Map<number, (v: any) => void>();
   private req = 1;
@@ -23,7 +27,9 @@ export class SimClient {
         case 'ready': this.onReady(m.w, m.h); break;
         case 'frame': this.onFrame(m); this.send({ t: 'ack' }); break;
         case 'stats': this.onStats(m); break;
-        case 'inspect': this.onInspect(m.info); break;
+        case 'inspect': this.onInspect(m.info, m.plant); break;
+        case 'terrain': this.onTerrain(m); break;
+        case 'trail': this.onTrail(m); break;
         case 'cell': this.onCell(m.info); break;
         case 'save': this.pending.get(m.reqId)?.(m.save); this.pending.delete(m.reqId); break;
         case 'verdict': this.pending.get(m.reqId)?.({ ok: m.ok, reason: m.reason }); this.pending.delete(m.reqId); break;

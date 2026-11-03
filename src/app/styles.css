@@ -210,3 +210,20 @@ dialog { max-width: calc(100vw - 24px); }
   .brand svg { width: 26px; height: 26px; }
 }
 @media (max-width: 360px) { .brand { display: none; } .readouts span { font-size: 12px; } }
+
+/* Etapa 3 */
+.s3only { display: none !important; }
+body.stage3 .s3only { display: revert !important; }
+body.stage3 .layers button.s3only { display: inline-block !important; }
+body.stage3 .brushr.s3only { display: flex !important; }
+#tab-fl { display: none; } body.stage3 #tab-fl { display: inline-block; }
+.cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: center; }
+.cmp canvas { width: 100%; max-width: 150px; aspect-ratio: 1; background: radial-gradient(#0d1b30, #050a14); border-radius: 8px; border: 1px solid var(--line); }
+.cmp .nm { font-style: italic; color: #fff; font-size: 11.5px; margin-top: 3px; }
+.trail { display: flex; align-items: center; gap: 2px; overflow-x: auto; padding-bottom: 4px; }
+.trail figure { margin: 0; text-align: center; flex: 0 0 auto; }
+.trail canvas { width: 54px; height: 54px; background: #050a14; border-radius: 6px; border: 1px solid var(--line); }
+.trail figcaption { font-size: 9.5px; color: var(--muted); font-family: var(--mono); }
+.trail .arrow { color: var(--muted); font-size: 11px; flex: 0 0 auto; }
+.brushr select { max-width: 150px; }
+@media (max-width: 1600px) { .readouts > div:nth-child(2), .readouts > div:nth-child(5) { display: none; } }

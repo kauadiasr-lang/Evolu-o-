@@ -39,6 +39,12 @@ export function stateHash(sim: Simulation): string {
     mix(sim.pool.x[i] * 1e4); mix(sim.pool.mass[i] * 1e6); mix(sim.pool.energy[i] * 1e6); mix(sim.pool.species[i]);
   }
   for (let i = 0; i < sim.planet.n; i += 7) { mix(sim.planet.nutrient[i] * 1e6); mix(sim.planet.detritus[i] * 1e6); }
+  if (sim.flora) {
+    mix(sim.flora.pool.count);
+    mix(sim.flora.totalMass() * 1e6);
+    for (let i = 0; i < sim.flora.pool.used; i++) if (sim.flora.pool.alive[i]) { mix(sim.flora.pool.mass[i] * 1e6); mix(sim.flora.pool.genes[i * 11] * 1e6); }
+    for (let i = 0; i < sim.planet.n; i += 5) mix(sim.planet.soilWater[i] * 1e6);
+  }
   return h.toString(16) + ':' + sim.species.size + ':' + sim.events.items.length;
 }
 
@@ -50,21 +56,25 @@ export function feed(sim: Simulation, x: number, y: number, amount: number): voi
   sim.planet.reservoir -= a;
 }
 
-import { visFromGenes, VIS } from '../src/core/snapshot';
-import type { StatsPayload } from '../src/worker/protocol';
+import { buildStats } from '../src/worker/summary';
 
-/** Reproduz o payload de estatísticas que o worker envia à interface/IA. */
-export function statsOf(s: Simulation): StatsPayload {
-  const species = s.species.list.map((sp) => {
-    const vis = new Uint8Array(VIS);
-    visFromGenes(sp.centroid, 0, vis, 0);
-    return { id: sp.id, name: sp.name, parentId: sp.parentId, bornTick: sp.bornTick, extinctTick: sp.extinctTick, count: sp.count, peak: sp.peak, trophic: sp.trophic, cause: sp.cause, vis: Array.from(vis), centroid: Array.from(sp.centroid), src: [0, 0, 0] as [number, number, number] };
-  });
-  return {
-    tick: s.tick, pop: s.pool.count, mass: s.massBreakdown(), speciesAlive: s.species.aliveCount(), speciesTotal: s.species.size, maxGen: s.maxGeneration,
-    births: s.birthsTotal, mutations: s.mutationsTotal, deaths: { ...s.deathsTotal },
-    planet: { climateTarget: s.planet.climateTarget, climateOffset: s.planet.climateOffset, pressure: s.planet.pressure, meanTemp: 20, season: 0 },
-    species, history: { ticks: s.history.ticks, series: s.history.series }, events: s.events.items.slice(-50), eventCount: s.events.items.length,
-    web: { nodes: [], edges: [] }, extinct: s.totalExtinct,
-  };
+/** Mesmo payload de estatísticas que o worker envia à interface/IA. */
+export const statsOf = (s: Simulation) => buildStats(s);
+
+/** Mundo da Etapa 3 (continentes, flora, morfologia), pequeno para testes rápidos. */
+export function stage3Sim(over: Partial<SimConfig> = {}): Simulation {
+  return new Simulation({ width: 48, height: 30, maxOrganisms: 15000, initialPopulation: 300, seed: 7, stage3: true, maxPlants: 4000, ...over });
+}
+
+/** Retorna uma célula de água e uma de terra interna (para experimentos controlados). */
+export function cells(sim: Simulation) {
+  const pl = sim.planet;
+  let water = -1, land = -1;
+  for (let i = 0; i < pl.n; i++) {
+    const x = i % pl.w, y = (i / pl.w) | 0;
+    if (y < 3 || y > pl.h - 4 || x < 3 || x > pl.w - 4) continue;
+    if (water < 0 && !pl.land[i] && !pl.land[i + 1] && !pl.land[i - 1] && pl.depth[i] < 0.5 && pl.temp[i] > 16 && pl.temp[i] < 28) water = i;
+    if (land < 0 && pl.land[i] && pl.land[i + 1] && pl.land[i - 1] && pl.land[i + pl.w] && pl.land[i - pl.w]) land = i;
+  }
+  return { water, land, w: pl.w };
 }

@@ -91,7 +91,7 @@ const LABEL: Record<Suggestion['type'], string> = {
   climate_shift: 'Variação climática',
   eruption: 'Erupção',
   nutrient_upwelling: 'Ressurgência de nutrientes',
-  adaptation: 'Variante genética',
+  hypothesis: 'Hipótese',
 };
 
 function describe(s: Suggestion): string {
@@ -99,6 +99,6 @@ function describe(s: Suggestion): string {
     case 'climate_shift': return `clima ${s.deltaT >= 0 ? '+' : ''}${s.deltaT} °C`;
     case 'eruption': return `erupção em (${s.x.toFixed(0)}, ${s.y.toFixed(0)}), massa ${s.amount.toFixed(0)}`;
     case 'nutrient_upwelling': return `ressurgência em (${s.x.toFixed(0)}, ${s.y.toFixed(0)}), massa ${s.amount.toFixed(0)}`;
-    case 'adaptation': return `variante de ${s.gene} (${s.delta >= 0 ? '+' : ''}${s.delta}) na espécie #${s.speciesId}`;
+    case 'hypothesis': return `hipótese: ${s.text}`;
   }
 }

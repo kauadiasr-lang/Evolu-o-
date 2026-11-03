@@ -59,6 +59,13 @@ export function localChronicle(d: Digest): Chronicle {
     const p = d.predacao[0];
     parts.push(`Na teia alimentar, ${p.predador} se alimenta principalmente de ${p.presa}.`);
   }
+  if (d.biomas && d.biomas.length) {
+    const land = d.biomas.filter((b) => !['Abismo', 'Oceano aberto', 'Plataforma costeira', 'Recife / águas rasas ricas'].includes(b.nome)).slice(0, 3);
+    if (land.length) parts.push(`Em terra, predominam ${land.map((b) => `${b.nome.toLowerCase()} (${b.percentualSuperficie}% da superfície)`).join(', ')}.`);
+  }
+  if (d.flora) parts.push(`A flora soma ${d.flora.plantas} plantas em ${d.flora.linhagensVivas} linhagens vivas${d.flora.principais[0] ? `; a mais abundante é ${d.flora.principais[0].nome} (${d.flora.principais[0].forma})` : ''}.`);
+  const anat = top?.anatomia?.estruturas?.length ? top.anatomia.estruturas : null;
+  if (top && anat) parts.push(`${top.nome} expressa ${anat.join(', ')} (plano corporal ${top.anatomia!.planoCorporal}).`);
   const m = d.mortalidade;
   const total = Object.values(m).reduce((a, b) => a + b, 0) || 1;
   const topCause = Object.entries(m).sort((a, b) => b[1] - a[1])[0];

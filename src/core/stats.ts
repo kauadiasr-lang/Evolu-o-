@@ -15,7 +15,10 @@ export type EventType =
   | 'total_extinction'
   | 'anagenesis'
   | 'ai_event'
-  | 'ai_impact';
+  | 'ai_impact'
+  | 'adaptation'
+  | 'biome'
+  | 'flora';
 
 export interface SimEvent {
   tick: number;
@@ -63,4 +66,6 @@ export const HISTORY_KEYS = [
   'pop', 'species', 'biomass', 'nutrient', 'detritus', 'reservoir', 'temp',
   'nPhoto', 'nMixo', 'nOsmo', 'nPred', 'births', 'deaths',
   'mSize', 'mPhoto', 'mOsmo', 'mPred', 'mMotil', 'mDef', 'mTopt', 'mMeta', 'mTtol',
+  // Etapa 3: vegetação e biomas (fração da superfície)
+  'plants', 'plantMass', 'cover', 'canopy', 'bForest', 'bGrass', 'bShrub', 'bDesert', 'bTundra', 'bSwamp', 'landTemp', 'landWater',
 ];

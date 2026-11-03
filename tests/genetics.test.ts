@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_MUTATION, G, GENE_COUNT, geneDistance, inherit, mutationRate, protocellGenome } from '../src/core/genome';
+import { BASE_GENES, DEFAULT_MUTATION, G, GENE_COUNT, geneDistance, inherit, mutationRate, protocellGenome } from '../src/core/genome';
 import { Rng } from '../src/core/rng';
 import { T, TR, deriveTraits } from '../src/core/traits';
 import { genome } from './helpers';
@@ -44,7 +44,7 @@ describe('hereditariedade e mutação', () => {
     expect(sumAbs / total).toBeLessThan(0.08); // pequenas em média
     expect(big / total).toBeLessThan(0.05); // grandes são raras
     // taxa observada ≈ taxa esperada
-    const expected = mutationRate(1) * GENE_COUNT * 4000;
+    const expected = mutationRate(1) * BASE_GENES * 4000; // só os genes clássicos mutam com o RNG principal
     expect(Math.abs(changed - expected) / expected).toBeLessThan(0.1);
   });
 

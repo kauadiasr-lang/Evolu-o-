@@ -27,6 +27,8 @@ export interface Species {
   totalBorn: number;
   trophic: Trophic;
   cause: string; // causa registrada da extinção
+  /** genoma médio ao longo do tempo (para acompanhar mudanças entre gerações) */
+  trail: { tick: number; genes: number[] }[];
 }
 
 export function classifyTrophic(g: ArrayLike<number>, o = 0): Trophic {
@@ -109,6 +111,7 @@ export class SpeciesRegistry {
       totalBorn: 0,
       trophic: classifyTrophic(g),
       cause: '',
+      trail: [],
     };
     this.list.push(sp);
     return sp;
@@ -119,7 +122,7 @@ export class SpeciesRegistry {
   }
   static fromJSON(data: any[]): SpeciesRegistry {
     const r = new SpeciesRegistry();
-    r.list = data.map((s) => ({ ...s, anchor: Float32Array.from(s.anchor), centroid: Float32Array.from(s.centroid) }));
+    r.list = data.map((s) => ({ ...s, trail: s.trail ?? [], anchor: Float32Array.from(s.anchor), centroid: Float32Array.from(s.centroid) }));
     return r;
   }
 }

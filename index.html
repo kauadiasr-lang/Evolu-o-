@@ -54,6 +54,7 @@
       <button class="sheet-x" data-close="side" aria-label="Fechar painel">✕</button>
       <nav class="tabs" id="side-tabs">
         <button data-tab="sp" class="on">Espécies</button>
+        <button data-tab="fl" id="tab-fl">Flora</button>
         <button data-tab="eco">Ecossistema</button>
         <button data-tab="ev">Eventos</button>
         <button data-tab="pl">Planeta</button>
@@ -61,6 +62,7 @@
       </nav>
       <div class="panes">
         <div class="pane on" id="pane-sp"></div>
+        <div class="pane" id="pane-fl"></div>
         <div class="pane" id="pane-eco"></div>
         <div class="pane" id="pane-ev"></div>
         <div class="pane" id="pane-pl"></div>
@@ -115,6 +117,7 @@
     <label>Tamanho do mundo
       <select id="in-size"><option value="64x40">Pequeno (64×40)</option><option value="96x60" selected>Médio (96×60)</option><option value="128x80">Grande (128×80)</option></select>
     </label>
+    <label class="chk"><input id="in-stage3" type="checkbox" checked /> Continentes, flora, morfologia e biomas (Etapa 3)</label>
     <label>Protocélulas iniciais <input id="in-pop" type="number" value="700" min="50" max="3000" /></label>
     <div class="row"><button value="cancel">Cancelar</button><button value="ok" class="primary" id="new-ok">Criar</button></div>
   </form>

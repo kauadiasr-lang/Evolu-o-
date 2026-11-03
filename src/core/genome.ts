@@ -30,9 +30,24 @@ export const G = {
   LOBES: 21,
   NUCLEUS: 22,
   SYMM: 23,
+  // --- genes morfológicos (Etapa 3): só são expressos se os pré-requisitos existirem (ver phenotype.ts)
+  SEGM: 24,
+  LIMBS: 25,
+  LIMBLEN: 26,
+  FINS: 27,
+  EYES: 28,
+  CAMO: 29,
+  CLIMB: 30,
+  TERR: 31,
+  ANTENNA: 32,
+  TAIL: 33,
+  HUE2: 34,
+  HEAD: 35,
 } as const;
 
-export const GENE_COUNT = 24;
+/** Genes "clássicos" (Etapas 1-2). Os demais são morfológicos e usam um fluxo de RNG próprio. */
+export const BASE_GENES = 24;
+export const GENE_COUNT = 36;
 
 export const GENE_INFO: { key: keyof typeof G; label: string; weight: number }[] = [
   { key: 'SIZE', label: 'Tamanho', weight: 1 },
@@ -59,10 +74,23 @@ export const GENE_INFO: { key: keyof typeof G; label: string; weight: number }[]
   { key: 'LOBES', label: 'Lobos da membrana', weight: 0.25 },
   { key: 'NUCLEUS', label: 'Núcleo', weight: 0.15 },
   { key: 'SYMM', label: 'Simetria', weight: 0.2 },
+  { key: 'SEGM', label: 'Segmentação', weight: 0.5 },
+  { key: 'LIMBS', label: 'Pares de membros', weight: 0.5 },
+  { key: 'LIMBLEN', label: 'Comprimento dos membros', weight: 0.3 },
+  { key: 'FINS', label: 'Nadadeiras', weight: 0.4 },
+  { key: 'EYES', label: 'Olhos', weight: 0.3 },
+  { key: 'CAMO', label: 'Camuflagem', weight: 0.4 },
+  { key: 'CLIMB', label: 'Escalada', weight: 0.4 },
+  { key: 'TERR', label: 'Adaptação terrestre', weight: 0.6 },
+  { key: 'ANTENNA', label: 'Antenas', weight: 0.2 },
+  { key: 'TAIL', label: 'Cauda propulsora', weight: 0.3 },
+  { key: 'HUE2', label: 'Pigmento secundário', weight: 0.2 },
+  { key: 'HEAD', label: 'Cefalização', weight: 0.3 },
 ];
 
 const W = Float64Array.from(GENE_INFO.map((g) => g.weight));
-const WSUM = W.reduce((a, b) => a + b, 0);
+/** Normalização fixa nos genes clássicos: preserva exatamente as distâncias da Etapa 1. */
+const WNORM = W.slice(0, BASE_GENES).reduce((a, b) => a + b, 0);
 
 /**
  * Distância genética ponderada (raiz da média quadrática), em [0,1].
@@ -75,7 +103,7 @@ export function geneDistance(a: ArrayLike<number>, ao: number, b: ArrayLike<numb
     const d = a[ao + i] - b[bo + i];
     s += W[i] * d * d;
   }
-  return Math.sqrt(s / WSUM);
+  return Math.sqrt(s / WNORM);
 }
 
 export interface MutationParams {
@@ -110,14 +138,26 @@ export function inherit(
   d0: number,
   rng: Rng,
   mp: MutationParams = DEFAULT_MUTATION,
+  mrng?: Rng,
 ): number {
   const p = mutationRate(src[so + G.MUT], mp);
   let n = 0;
-  for (let i = 0; i < GENE_COUNT; i++) {
+  for (let i = 0; i < BASE_GENES; i++) {
     let v = src[so + i];
     if (rng.next() < p) {
       const sigma = rng.next() < mp.bigProb ? mp.bigSigma : mp.smallSigma;
       v += rng.gauss() * sigma;
+      v = v < 0 ? 0 : v > 1 ? 1 : v;
+      n++;
+    }
+    dst[d0 + i] = v;
+  }
+  // genes morfológicos: fluxo de RNG separado (a física clássica não é perturbada)
+  for (let i = BASE_GENES; i < GENE_COUNT; i++) {
+    let v = src[so + i];
+    if (mrng && mrng.next() < p) {
+      const sigma = mrng.next() < mp.bigProb ? mp.bigSigma : mp.smallSigma;
+      v += mrng.gauss() * sigma;
       v = v < 0 ? 0 : v > 1 ? 1 : v;
       n++;
     }
@@ -128,14 +168,32 @@ export function inherit(
 
 /** Genoma de uma protocélula primordial: generalista simples, com variação. */
 export function protocellGenome(rng: Rng, out: Float32Array, o: number, variation = 0.08): void {
-  const base: Record<keyof typeof G, number> = {
+  const base: Partial<Record<keyof typeof G, number>> = {
     SIZE: 0.12, PHOTO: 0.55, OSMO: 0.45, PRED: 0.0, MOTIL: 0.15, SENSE: 0.25, META: 0.45,
     REPRO: 0.3, INVEST: 0.5, TOPT: 0.55, TTOL: 0.45, DEFENSE: 0.05, MUT: 0.35, AFFIN: 0.45,
     LONGEV: 0.4, HUE: 0.33, SAT: 0.5, PATTERN: 0.1, ELONG: 0.1, FLAG: 0.2, SPIKE: 0.05,
     LOBES: 0.1, NUCLEUS: 0.5, SYMM: 0.5,
   };
-  (Object.keys(G) as (keyof typeof G)[]).forEach((k) => {
-    let v = base[k] + rng.gauss() * variation;
+  (Object.keys(base) as (keyof typeof G)[]).forEach((k) => {
+    let v = base[k]! + rng.gauss() * variation;
     out[o + G[k]] = v < 0 ? 0 : v > 1 ? 1 : v;
   });
+  for (let i = BASE_GENES; i < GENE_COUNT; i++) out[o + i] = 0;
+}
+
+/** Genes morfológicos iniciais da protocélula (Etapa 3): quase nenhuma estrutura, com variação críptica. */
+export function protocellMorph(rng: Rng, out: Float32Array, o: number): void {
+  const r = (a: number, b: number) => rng.range(a, b);
+  out[o + G.SEGM] = r(0, 0.12);
+  out[o + G.LIMBS] = r(0, 0.1);
+  out[o + G.LIMBLEN] = r(0, 0.3);
+  out[o + G.FINS] = r(0, 0.15);
+  out[o + G.EYES] = r(0, 0.25);
+  out[o + G.CAMO] = r(0, 0.1);
+  out[o + G.CLIMB] = r(0, 0.05);
+  out[o + G.TERR] = r(0, 0.05);
+  out[o + G.ANTENNA] = r(0, 0.2);
+  out[o + G.TAIL] = r(0, 0.12);
+  out[o + G.HUE2] = r(0, 1);
+  out[o + G.HEAD] = r(0, 0.1);
 }

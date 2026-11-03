@@ -3,8 +3,9 @@ import { SpeciesRegistry } from './species';
 import { History, SimEvent } from './stats';
 import { GENE_COUNT } from './genome';
 import { TR } from './traits';
+import { PLANT_GENES, type PlantLineage } from './flora';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface SaveData {
   version: number;
@@ -23,7 +24,23 @@ export function exportSave(sim: Simulation): SaveData {
     mass: p.mass.slice(0, u), energy: p.energy.slice(0, u), cell: p.cell.slice(0, u),
     genes: p.genes.slice(0, u * GENE_COUNT), tr: p.tr.slice(0, u * TR), free: p.exportFree(),
     energySrc: sim.energySrc.slice(),
+    land: pl.land.slice(), elev: pl.elev.slice(), rain: pl.rain.slice(), soilWater: pl.soilWater.slice(), bgHue: pl.bgHue.slice(),
   };
+  const fl = sim.flora;
+  let floraMeta: any = null;
+  if (fl) {
+    const q = fl.pool, fu = q.used;
+    Object.assign(arrays, {
+      f_alive: q.alive.slice(0, fu), f_id: q.id.slice(0, fu), f_lineage: q.lineage.slice(0, fu), f_gen: q.gen.slice(0, fu), f_age: q.age.slice(0, fu),
+      f_cell: q.cell.slice(0, fu), f_genes: q.genes.slice(0, fu * PLANT_GENES), f_mass: q.mass.slice(0, fu), f_energy: q.energy.slice(0, fu), f_free: q.exportFree(),
+      f_slots: fl.slots.slice(), f_count: fl.cellCount.slice(), f_lai: fl.lai.slice(), f_under: fl.understory.slice(), f_cover: fl.cover.slice(),
+      f_hue: fl.vegHue.slice(), f_height: fl.meanHeight.slice(), f_cmass: fl.cellMass.slice(),
+    });
+    floraMeta = {
+      used: fu, nextId: q.nextId, colonized: fl.colonized, now: fl.now, births: fl.births, deathsTotal: fl.deathsTotal, rng: fl.rng.state,
+      lineages: fl.lineages.map((l) => ({ ...l, anchor: Array.from(l.anchor), centroid: Array.from(l.centroid) })),
+    };
+  }
   const meta = {
     cfg: sim.cfg,
     tick: sim.tick,
@@ -39,6 +56,7 @@ export function exportSave(sim: Simulation): SaveData {
     },
     predFlow: Array.from(sim.predFlow.entries()),
     internal: sim.exportInternal(),
+    stage3: { mrng: sim.mrng.state, flora: floraMeta, seen: [...sim.structuresSeen] },
   };
   return { version: SAVE_VERSION, meta, arrays };
 }
@@ -95,5 +113,52 @@ export function importSave(data: SaveData): Simulation {
   sim.predFlow = new Map(m.predFlow);
   sim.energySrc = Float64Array.from(a.energySrc as Float64Array);
   sim.importInternal(m.internal);
+  // ---- Etapa 3
+  if (a.land) {
+    pl.land.set(a.land as Uint8Array);
+    pl.elev.set(a.elev as Float32Array);
+    pl.rain.set(a.rain as Float32Array);
+    pl.soilWater.set(a.soilWater as Float32Array);
+    pl.bgHue.set(a.bgHue as Float32Array);
+    pl.stage3 = !!m.cfg.stage3;
+    const lc: number[] = [];
+    for (let i = 0; i < pl.n; i++) if (pl.land[i]) lc.push(i);
+    pl.landCells = Int32Array.from(lc);
+  }
+  if (m.stage3) {
+    sim.mrng.state = m.stage3.mrng;
+    sim.structuresSeen = new Set(m.stage3.seen);
+    const fm = m.stage3.flora;
+    const fl = sim.flora;
+    if (fl && fm) {
+      const q = fl.pool;
+      q.used = fm.used;
+      q.nextId = fm.nextId;
+      q.alive.set(a.f_alive as Uint8Array);
+      q.id.set(a.f_id as Uint32Array);
+      q.lineage.set(a.f_lineage as Uint32Array);
+      q.gen.set(a.f_gen as Uint32Array);
+      q.age.set(a.f_age as Uint32Array);
+      q.cell.set(a.f_cell as Int32Array);
+      q.genes.set(a.f_genes as Float32Array);
+      q.mass.set(a.f_mass as Float64Array);
+      q.energy.set(a.f_energy as Float64Array);
+      q.importFree(a.f_free as Int32Array);
+      fl.slots.set(a.f_slots as Int32Array);
+      fl.cellCount.set(a.f_count as Uint8Array);
+      fl.lai.set(a.f_lai as Float32Array);
+      fl.understory.set(a.f_under as Float32Array);
+      fl.cover.set(a.f_cover as Float32Array);
+      fl.vegHue.set(a.f_hue as Float32Array);
+      fl.meanHeight.set(a.f_height as Float32Array);
+      fl.cellMass.set(a.f_cmass as Float32Array);
+      fl.colonized = fm.colonized;
+      fl.now = fm.now;
+      fl.births = fm.births;
+      fl.deathsTotal = fm.deathsTotal;
+      fl.rng.state = fm.rng;
+      fl.lineages = fm.lineages.map((l: any): PlantLineage => ({ ...l, anchor: Float32Array.from(l.anchor), centroid: Float32Array.from(l.centroid) }));
+    }
+  }
   return sim;
 }

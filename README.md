@@ -133,21 +133,81 @@ movimento] → química da célula (difusão, decomposição, sedimentação, fo
 5. **Determinismo** — RNG semeado e estado (inclusive lista livre do pool) salvo, para que o save/load
    reproduza a mesma história.
 
+## Etapa 3 — morfogênese, flora e biomas
+
+Tudo da Etapa 3 vive atrás da flag `stage3` da configuração do mundo. Com `stage3: false` o motor é **bit a bit
+idêntico** ao das Etapas 1–2 (travado por `tests/physics-lock.test.ts`); o jogo cria mundos novos com `stage3: true`
+(caixa "Continentes, flora, morfologia e biomas" no diálogo *Novo planeta*).
+
+**Evolução visual dos animais.** O genoma passou a ter 36 genes: 12 morfológicos (segmentação, pares de membros e
+comprimento, nadadeiras, olhos, camuflagem, escalada, adaptação terrestre, antenas, cauda, pigmento secundário,
+cefalização). Eles são herdados e mutados por um fluxo de RNG separado (a física clássica não é perturbada).
+A aparência vem do **fenótipo expresso** (`src/core/phenotype.ts`): uma estrutura só se desenvolve se os
+pré-requisitos existem — membros exigem motilidade e tamanho; escalada e vida terrestre exigem membros; segmentos
+exigem corpo alongado; olhos exigem quimiotaxia; radiais não têm cabeça nem segmentos. Genes sem pré-requisito ficam
+*crípticos* (herdados, mas sem efeito visual nem custo). Planos corporais: unicelular, bilateral, segmentado,
+radial, assimétrico.
+
+| Estrutura | Benefício no motor | Custo |
+|---|---|---|
+| Nadadeiras / cauda / segmentos | velocidade na água | manutenção (por segmento, nadadeira…) |
+| Membros | locomoção em terra | manutenção por par e comprimento |
+| Adaptação terrestre | sem dessecação fora d'água | manutenção alta, inútil no mar |
+| Escalada | alcança plantas altas; reduz predação por animais de solo | manutenção |
+| Olhos / cefalização | caça mais eficaz, taxia melhor | manutenção |
+| Camuflagem | reduz captura **se o matiz do corpo casar com o substrato** (água, solo ou vegetação) | pigmentação |
+| Carapaça (defesa) | resistência à predação | peso, lentidão (Etapa 1) |
+
+**Continentes e clima.** ~32% da superfície é terra emersa (relevo por ruído, nível do mar por percentil), com
+umidade vinda do oceano, desertos subtropicais, gradiente térmico com a altitude e solo que recarrega com a chuva.
+O aquecimento seca a terra. Animais sem membros e integumento não entram em terra; quem entra paga dessecação.
+
+**Flora procedural** (`src/core/flora.ts`). Plantas são indivíduos com 11 genes: altura, largura da folha, densidade
+foliar, profundidade das raízes, pigmentação, tolerância à sombra e à seca, temperatura ótima/tolerância, investimento
+em sementes e taxa de mutação. Competem por **luz** (dossel com atenuação de Beer–Lambert: árvores altas sombreiam o
+que está abaixo, inclusive o chão onde animais fotossintetizam), **água** (solo compartilhado; raízes profundas
+alcançam mais) e **nutrientes** (a mesma reserva de massa conservada do oceano). Custos: altura e raízes cobram
+manutenção; folha larga transpira mais; tolerar seca ou sombra reduz o rendimento máximo. Reprodução com dispersão
+pelo vento e linhagens que se ramificam. Seis formas de crescimento emergem dos genes (musgo, erva, gramínea,
+arbusto, árvore, suculenta). A colonização da terra acontece quando o mar acumula biomassa fotossintética
+suficiente (condição observada, não sorteio).
+
+**Biomas emergentes** (`src/core/biomes.ts`). Não há mapa fixo: cada célula é classificada a partir de temperatura,
+umidade do solo, relevo e **vegetação realmente presente** (cobertura e altura): oceano aberto, abismo, plataforma,
+recife, gelo, tundra, deserto, terra nua, pradaria, arbustal, floresta e pântano. O desenho mistura os mesmos campos
+contínuos (cor do solo por umidade e frio + cor da vegetação pelo pigmento real e altura), então as transições são
+graduais e mudam quando o clima muda. Eventos de bioma citam as variações medidas.
+
+**Interface.** Camadas *Biomas*, *Umidade* e *Vegetação*; aba **Flora** (linhagens, retrato com perfil de raízes,
+custos/benefícios); no painel de espécies: plano corporal, anatomia expressa com custo/benefício, **trilha de gerações**
+(retratos da linhagem ao longo do tempo) e **comparação de duas espécies**; a ficha do organismo mostra a variação
+individual em relação à média da espécie. Ferramenta sandbox **Semear plano corporal** (nadador segmentado, anfíbio,
+escalador, camuflado, blindado, radial): são só sementes — a massa vem do nutriente/sedimento e a seleção decide.
+
+**IA (Etapa 3).** O digest agora traz anatomia expressa, flora e biomas reais; novos modos *Analisar espécie* e *Narrar
+biomas*. **A IA nunca altera genomas**: a antiga sugestão `adaptation` (que editava genes de até 5 indivíduos) foi
+removida; hipóteses sobre adaptações são texto. Sem IA, o cronista local narra os fatos.
+
 ## Estado atual por etapa
 
 | Etapa | Estado |
 |---|---|
 | 1 Protótipo evolutivo | ✅ planeta 2D, oceano, unicelulares, genética, reprodução, mutação, energia, seleção, velocidade, interface |
 | 2 Ecossistema | 🟡 fotossintéticos, osmótrofos/decompositores e predadores **emergem do genoma**; teia alimentar dinâmica, nutrientes e biomassa. Herbívoros/carnívoros especializados dependem de multicelularidade (Etapa 3) |
-| 3 Evolução visual | 🟡 morfogênese genética de unicelulares. Multicelulares, plantas, simetria radial/segmentação: pendentes |
-| 4 Planeta complexo | 🟡 relevo oceânico, clima, ciclo de nutrientes e geologia. Continentes, solo, atmosfera (O₂/CO₂), biomas: pendentes |
+| 3 Evolução visual | ✅ morfogênese por fenótipo expresso (segmentos, membros, nadadeiras, olhos, carapaça, camuflagem, escalada, radial), flora procedural e biomas emergentes. Limitações abaixo |
+| 4 Planeta complexo | 🟡 continentes, hidrologia, solo, clima, ciclo de nutrientes, geologia e biomas. Atmosfera (O₂/CO₂) e ciclo do carbono: pendentes |
 | 5 IA | 🟡 crônicas, perguntas, hipóteses e validação pelo motor. Análise de espécies mais profunda: pendente |
 | 6 Expansão | ⬜ 3D, comportamentos complexos, novos metabolismos, inteligência |
 
 ### Limitações conhecidas
 
-- Os organismos são unicelulares e assexuados; a especiação é por agrupamento fenético (não há isolamento
-  reprodutivo explícito).
+- Os animais ainda são assexuados e de um único "plano de células": segmentos, membros etc. são fenótipos de um
+  organismo, não colônias multicelulares simuladas célula a célula. A especiação é por agrupamento fenético.
+- A vida **começa no mar**; plantas colonizam a terra por um gatilho de estado (biomassa fotossintética), e animais só
+  chegam à terra se evoluírem (ou forem semeados) membros + integumento. Nas sementes testadas, a emergência
+  espontânea de animais terrestres não ocorreu em 30.000 ticks; o sandbox existe para observar o plano corporal.
+- Plantas: florestas (média de altura > 1,6) surgem só em regiões úmidas e devagar; predominam musgos, ervas e arbustos.
+- Camuflagem só protege quando o matiz do corpo casa com o substrato local; o substrato de vegetação usa o matiz médio.
 - Os ciclos de O₂/CO₂ e a atmosfera ainda não existem; apenas a matéria (nutriente) circula.
 - Em ~10 000 ticks a diversidade trófica é modesta (predadores especializados surgem lentamente); sementes
   diferentes seguem trajetórias diferentes.

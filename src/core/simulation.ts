@@ -1,4 +1,8 @@
-import { DEFAULT_MUTATION, G, GENE_COUNT, MutationParams, inherit, protocellGenome } from './genome';
+import { DEFAULT_MUTATION, G, GENE_COUNT, MutationParams, inherit, protocellGenome, protocellMorph } from './genome';
+import { ARCHETYPES, ArchetypeKind, archetypeGenome } from './archetypes';
+import { Flora } from './flora';
+import { camoMatch, develop } from './phenotype';
+import { BIOME_INFO, computeTerrain, landMean } from './biomes';
 import { OrganismPool } from './organisms';
 import { P } from './params';
 import { Rng } from './rng';
@@ -15,6 +19,9 @@ export interface SimConfig {
   initialPopulation: number;
   nutrientPerCell: number;
   mutation: MutationParams;
+  /** Etapa 3: continentes, flora, morfologia e biomas. false = física da Etapa 1/2, bit a bit. */
+  stage3: boolean;
+  maxPlants: number;
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -25,6 +32,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   initialPopulation: 700,
   nutrientPerCell: 7,
   mutation: DEFAULT_MUTATION,
+  stage3: false,
+  maxPlants: 12000,
 };
 
 export type DeathCause = 'starve' | 'age' | 'predation' | 'thermal' | 'impact';
@@ -36,7 +45,7 @@ export const DEATH_LABEL: Record<DeathCause, string> = {
   impact: 'Catástrofe',
 };
 
-export type PaintMode = 'warm' | 'cool' | 'deepen' | 'shallow' | 'nutrients' | 'impact' | 'seed' | 'erupt';
+export type PaintMode = 'warm' | 'cool' | 'deepen' | 'shallow' | 'nutrients' | 'impact' | 'seed' | 'erupt' | 'archetype';
 
 /** Motor de simulação: independente de interface, IA e renderização. */
 export class Simulation {
@@ -74,9 +83,20 @@ export class Simulation {
   private topSpecies = 0;
   totalExtinct = false;
 
+  // ---- Etapa 3
+  readonly stage3: boolean;
+  /** fluxo de RNG exclusivo dos genes morfológicos (não perturba a física clássica) */
+  mrng: Rng;
+  flora: Flora | null = null;
+  private capable = false;
+  /** primeira vez que cada estrutura foi expressa por vários indivíduos (para registrar o evento evolutivo) */
+  structuresSeen = new Set<string>();
+
   constructor(cfg: Partial<SimConfig> = {}, init = true) {
     this.cfg = { ...DEFAULT_CONFIG, ...cfg };
     this.rng = new Rng(this.cfg.seed);
+    this.stage3 = this.cfg.stage3;
+    this.mrng = new Rng((this.cfg.seed ^ 0x5bd1e995) >>> 0);
     this.planet = new Planet(this.cfg.width, this.cfg.height);
     this.pool = new OrganismPool(this.cfg.maxOrganisms);
     const n = this.planet.n;
@@ -84,8 +104,10 @@ export class Simulation {
     this.cellCount = new Int32Array(n);
     this.cellItems = new Int32Array(this.cfg.maxOrganisms);
     this.shade = new Float32Array(n);
+    if (this.stage3) this.flora = new Flora(n, this.cfg.maxPlants, (this.cfg.seed ^ 0x9e3779b1) >>> 0);
     if (init) {
-      this.planet.generate(this.rng, this.cfg.nutrientPerCell);
+      if (this.stage3) this.planet.generateContinents(this.rng, this.cfg.nutrientPerCell);
+      else this.planet.generate(this.rng, this.cfg.nutrientPerCell);
       this.seedPrimordialLife(this.cfg.initialPopulation);
     }
   }
@@ -103,7 +125,7 @@ export class Simulation {
       while (centers.length < clumps && guard++ < 500) {
         const x = rng.int(planet.w), y = rng.int(planet.h);
         const i = y * planet.w + x;
-        if (planet.light[i] > 0.3 && planet.temp[i] > 14 && planet.temp[i] < 30) centers.push([x + 0.5, y + 0.5]);
+        if (planet.light[i] > 0.3 && planet.temp[i] > 14 && planet.temp[i] < 30 && !(this.stage3 && planet.land[i])) centers.push([x + 0.5, y + 0.5]);
       }
       if (centers.length === 0) centers.push([planet.w / 2, planet.h / 2]);
     }
@@ -119,6 +141,10 @@ export class Simulation {
       y = Math.min(planet.h - 0.001, Math.max(0, y));
       const c = Math.floor(y) * planet.w + Math.floor(x);
       protocellGenome(rng, tmp, 0);
+      if (this.stage3) {
+        if (planet.land[c]) continue; // a vida primordial nasce no mar
+        protocellMorph(this.mrng, tmp, 0);
+      }
       const j = this.spawnRaw(tmp, 0, x, y, c, sp);
       if (j >= 0) {
         created++;
@@ -141,7 +167,7 @@ export class Simulation {
   private spawnRaw(genes: Float32Array, go: number, x: number, y: number, c: number, sp: ReturnType<SpeciesRegistry['create']> | null, massOverride?: number, energyOverride?: number): number {
     const pool = this.pool, planet = this.planet;
     const tr = new Float32Array(TR);
-    deriveTraits(genes, go, tr, 0);
+    deriveTraits(genes, go, tr, 0, this.stage3);
     const want = massOverride ?? tr[T.MASS_REPRO] * 0.6;
     // reúne massa da célula e vizinhas
     const take = Math.min(planet.nutrient[c], want);
@@ -221,6 +247,7 @@ export class Simulation {
       if (!pool.alive[i] || pool.born[i] === this.tick) continue;
       this.updateOrganism(i);
     }
+    if (this.flora) this.flora.step(planet, this.tick);
     planet.stepChemistry();
     this.geology();
     this.tick++;
@@ -279,11 +306,14 @@ export class Simulation {
     const dT = (T_ - tr[tb + T.TOPT]) / tr[tb + T.TWIDTH];
     const tf = Math.exp(-dT * dT);
     const m23 = Math.cbrt(mass * mass);
+    const land = this.stage3 && planet.land[c] === 1;
+    // em terra, o dossel das plantas sombreia o chão (Etapa 3)
+    const lightHere = land ? planet.light[c] * this.flora!.understory[c] : planet.light[c];
 
     // --- fotossíntese (luz compartilhada e sombreada pelos vizinhos)
     const photo = tr[tb + T.PHOTO];
     if (photo > 0.01) {
-      const gain = P.PHOTO_K * photo * (planet.light[c] / (1 + P.SHADE_K * this.shade[c])) * m23 * tf;
+      const gain = P.PHOTO_K * photo * (lightHere / (1 + P.SHADE_K * this.shade[c])) * m23 * tf;
       energy += gain;
       this.addSrc(sId, 0, gain);
     }
@@ -318,6 +348,13 @@ export class Simulation {
             const evade = 1 - 0.45 * Math.min(1, tr[jb + T.SPEED] * 5);
             let p = pred * (1 - 0.88 * tr[jb + T.DEF]) * evade;
             p *= Math.min(1, 0.45 + 0.55 * (mass / Math.max(mj, 1e-6) - 1) * 0.5 + 0.25);
+            if (this.stage3) {
+              // olhos melhoram a caça; camuflagem (casada com o substrato) e escalada reduzem a captura
+              p *= 1 + 0.3 * (tr[tb + T.EYES] / 3) * (1 + 0.3 * tr[tb + T.HEAD]);
+              const cj = tr[jb + T.CAMO];
+              if (cj > 0) p *= 1 - 0.6 * cj * camoMatch(tr[jb + T.BODYHUE], planet.bgHue[c]);
+              if (land && tr[jb + T.CLIMB] > 0) p *= 1 - 0.35 * tr[jb + T.CLIMB];
+            }
             if (rng.next() < p * tf) {
               const gainM = mj * P.PRED_ASSIM;
               mass += gainM;
@@ -340,10 +377,24 @@ export class Simulation {
       }
     }
 
+    // --- herbivoria (Etapa 3): morde plantas ao alcance; alturas fora do alcance só são acessíveis a escaladores
+    if (land && pred > P.PRED_MIN && this.flora) {
+      const eat = this.flora.graze(planet, c, tr[tb + T.REACH], 0.35 * pred * m23);
+      if (eat > 0) {
+        const gainM = eat * P.PRED_ASSIM;
+        mass += gainM;
+        planet.detritus[c] += eat - gainM;
+        const e = eat * P.E_PER_MASS * 0.45;
+        energy += e;
+        this.addSrc(sId, 2, e);
+      }
+    }
+
     // --- manutenção metabólica (custos das adaptações embutidos em COST_MULT)
     const q = Math.min(2.5, Math.max(0.3, Math.exp(0.05 * (T_ - 15))));
     let up = P.UP_K * Math.pow(mass, 0.75) * tr[tb + T.META] * q * tr[tb + T.COST_MULT];
     up *= 1 + P.THERMAL_STRESS * (1 - tf); // fora do ótimo, o reparo celular custa mais
+    if (land) up += P.DESICCATION * (1 - tr[tb + T.TERR]) * (1 - 0.7 * planet.soilWater[c]) * m23; // dessecação
     energy -= up;
 
     // --- crescimento (absorção de nutriente dissolvido)
@@ -417,9 +468,9 @@ export class Simulation {
     const { pool, rng, planet } = this;
     const j = pool.alloc();
     if (j < 0) return false;
-    const muts = inherit(pool.genes, p * GENE_COUNT, pool.genes, j * GENE_COUNT, rng, this.cfg.mutation);
+    const muts = inherit(pool.genes, p * GENE_COUNT, pool.genes, j * GENE_COUNT, rng, this.cfg.mutation, this.stage3 ? this.mrng : undefined);
     this.mutationsTotal += muts;
-    deriveTraits(pool.genes, j * GENE_COUNT, pool.tr, j * TR);
+    deriveTraits(pool.genes, j * GENE_COUNT, pool.tr, j * TR, this.stage3);
     const sid = pool.species[p];
     pool.species[j] = sid;
     const sp = this.species.get(sid);
@@ -440,6 +491,10 @@ export class Simulation {
     let y = pool.y[p] + (rng.next() - 0.5) * 2 * disp;
     x = ((x % planet.w) + planet.w) % planet.w;
     y = y < 0 ? 0 : y >= planet.h ? planet.h - 0.001 : y;
+    if (this.stage3 && planet.land[(y | 0) * planet.w + (x | 0)] && !(pool.tr[p * TR + T.TERR] > 0 && pool.tr[p * TR + T.LSPEED] > 0)) {
+      x = pool.x[p]; // prole aquática não nasce em terra firme
+      y = pool.y[p];
+    }
     pool.x[j] = x;
     pool.y[j] = y;
     pool.vx[j] = 0;
@@ -456,7 +511,9 @@ export class Simulation {
     const { pool, planet, rng } = this;
     const tb = i * TR;
     const tr = pool.tr;
-    const spd = tr[tb + T.SPEED];
+    const onLand = this.stage3 && planet.land[c] === 1;
+    const spd = onLand ? tr[tb + T.LSPEED] : tr[tb + T.SPEED];
+    if (this.stage3) this.capable = tr[tb + T.TERR] > 0 && tr[tb + T.LSPEED] > 0;
     const w = planet.w, h = planet.h;
     let vx = pool.vx[i] * 0.6 + (rng.next() - 0.5) * 2 * (spd * 0.7 + P.BROWN);
     let vy = pool.vy[i] * 0.6 + (rng.next() - 0.5) * 2 * (spd * 0.7 + P.BROWN);
@@ -488,6 +545,13 @@ export class Simulation {
     let y = pool.y[i] + vy;
     x = x < 0 ? x + w : x >= w ? x - w : x;
     if (y < 0) { y = 0; vy = -vy; } else if (y >= h) { y = h - 0.001; vy = -vy; }
+    if (this.stage3 && !this.capable && planet.land[(y | 0) * w + (x | 0)]) {
+      // sem membros e integumento adaptado, a costa é uma barreira
+      x = pool.x[i];
+      y = pool.y[i];
+      vx = -vx * 0.5;
+      vy = -vy * 0.5;
+    }
     pool.x[i] = x;
     pool.y[i] = y;
     pool.vx[i] = vx;
@@ -499,6 +563,13 @@ export class Simulation {
 
   private score(c: number, photo: number, osmo: number, pred: number, topt: number, tw: number): number {
     const p = this.planet;
+    if (this.stage3 && p.land[c] === 1) {
+      if (!this.capable) return -1e9;
+      // em terra, vegetação ao alcance atrai herbívoros
+      const veg = this.flora!.cellMass[c];
+      const dl = (p.temp[c] - topt) / tw;
+      return pred * 0.8 * Math.min(1, veg / 6) + osmo * 0.6 * Math.min(1, p.detritus[c] / 2) + 0.6 * Math.exp(-dl * dl) - 0.15;
+    }
     const d = (p.temp[c] - topt) / tw;
     const tf = Math.exp(-d * d);
     const s =
@@ -507,6 +578,47 @@ export class Simulation {
       pred * 0.6 * Math.min(1, this.cellCount[c] / 5) +
       0.25 * Math.min(1, p.nutrient[c] / 8);
     return s * (0.4 + 0.6 * tf) + 0.6 * tf;
+  }
+
+  /**
+   * Sandbox: introduz uma linhagem com plano corporal de um arquétipo (massa vinda do nutriente local).
+   * É só um ponto de partida: custos, ambiente e predação decidem se ela persiste.
+   */
+  seedArchetype(kind: ArchetypeKind, cx: number, cy: number, count = 24, radius = 2): number {
+    const { planet, rng } = this;
+    const info = ARCHETYPES[kind];
+    const tmp = new Float32Array(GENE_COUNT);
+    archetypeGenome(kind, rng, this.mrng, tmp, 0);
+    const probe = new Float32Array(TR);
+    deriveTraits(tmp, 0, probe, 0, this.stage3);
+    const terrestrial = probe[T.TERR] > 0 && probe[T.LSPEED] > 0;
+    const parent = this.species.list[0] ?? null;
+    const sp = this.species.create(parent, tmp, 0, this.tick, rng);
+    let created = 0;
+    for (let k = 0; k < count; k++) {
+      archetypeGenome(kind, rng, this.mrng, tmp, 0);
+      const x = (((cx + rng.gauss() * radius * 0.6) % planet.w) + planet.w) % planet.w;
+      const y = Math.min(planet.h - 0.001, Math.max(0, cy + rng.gauss() * radius * 0.6));
+      const c = Math.floor(y) * planet.w + Math.floor(x);
+      if (this.stage3 && planet.land[c] && !terrestrial) continue;
+      // se o nutriente local não basta, completa a massa com o sedimento (reservatório): só move matéria
+      const need = probe[T.MASS_REPRO] * 0.6 - planet.nutrient[c];
+      if (need > 0 && planet.reservoir > 0) {
+        const mv = Math.min(need, planet.reservoir);
+        planet.nutrient[c] += mv;
+        planet.reservoir -= mv;
+      }
+      // reserva energética inicial cheia: o sandbox permite observar o plano corporal antes da seleção agir
+      const j = this.spawnRaw(tmp, 0, x, y, c, sp, undefined, 4 * probe[T.MASS_REPRO] * 0.6);
+      if (j >= 0) created++;
+    }
+    if (created === 0) {
+      sp.extinctTick = this.tick;
+      sp.cause = 'sem nutrientes ou habitat';
+    } else {
+      this.events.add({ tick: this.tick, type: 'user', title: `Arquétipo semeado: ${info.label}`, text: `${created} indivíduos de ${sp.name} foram introduzidos (${info.desc}) Daqui em diante, apenas a seleção natural decide.`, speciesId: sp.id, magnitude: created });
+    }
+    return created;
   }
 
   // ------------------------------------------------------------------ geologia
@@ -659,8 +771,12 @@ export class Simulation {
   }
 
   /** Ferramenta de pincel do jogador. Todas as operações respeitam a conservação de massa. */
-  paint(mode: PaintMode, cx: number, cy: number, radius: number): void {
+  paint(mode: PaintMode, cx: number, cy: number, radius: number, kind?: ArchetypeKind): void {
     const pl = this.planet;
+    if (mode === 'archetype') {
+      this.seedArchetype(kind ?? 'swimmer', cx, cy, Math.round(12 + radius * 4), Math.max(1.5, radius));
+      return;
+    }
     if (mode === 'impact') {
       this.impact(cx, cy, radius);
       return;
@@ -685,8 +801,8 @@ export class Simulation {
         const f = 1 - d / (radius + 0.001);
         if (mode === 'warm') pl.userTemp[i] += 3 * f;
         else if (mode === 'cool') pl.userTemp[i] -= 3 * f;
-        else if (mode === 'deepen') pl.depth[i] = Math.min(1, pl.depth[i] + 0.08 * f);
-        else if (mode === 'shallow') pl.depth[i] = Math.max(0, pl.depth[i] - 0.08 * f);
+        else if (mode === 'deepen') { if (!(this.stage3 && pl.land[i])) pl.depth[i] = Math.min(1, pl.depth[i] + 0.08 * f); }
+        else if (mode === 'shallow') { if (!(this.stage3 && pl.land[i])) pl.depth[i] = Math.max(0, pl.depth[i] - 0.08 * f); }
         else if (mode === 'nutrients') {
           const amt = Math.min(pl.reservoir, 3 * f);
           pl.nutrient[i] += amt;
@@ -711,6 +827,121 @@ export class Simulation {
         magnitude: e.size,
       });
     }
+    // trilha evolutiva: genoma médio de cada espécie ao longo do tempo
+    if (this.tick % 400 === 0) {
+      for (const sp of this.species.list) {
+        if (sp.extinctTick >= 0 || sp.count < 8) continue;
+        sp.trail.push({ tick: this.tick, genes: Array.from(sp.centroid) });
+        if (sp.trail.length > 16) sp.trail = sp.trail.filter((_, i) => i === 0 || i % 2 === 1 || i === sp.trail.length - 1);
+      }
+    }
+    if (this.flora && !this.flora.colonized) this.checkColonization();
+  }
+
+  /**
+   * Colonização da terra: acontece quando o mar acumula biomassa fotossintética suficiente
+   * (condição observada no estado real, não um sorteio): esporos/algas chegam às margens úmidas.
+   */
+  private checkColonization(): void {
+    if (this.tick < 500) return;
+    const pool = this.pool;
+    let pb = 0;
+    for (let i = 0; i < pool.used; i++) if (pool.alive[i] && pool.tr[i * TR + T.PHOTO] > 0.3) pb += pool.mass[i];
+    if (pb < 400) return;
+    const n = this.flora!.colonize(this.planet, this.tick, 48);
+    if (n > 0) {
+      this.events.add({
+        tick: this.tick,
+        type: 'flora',
+        title: 'Colonização da terra',
+        text: `Com ${pb.toFixed(0)} unidades de biomassa fotossintética no mar, as primeiras ${n} plantas pioneiras se estabeleceram nas margens úmidas dos continentes.`,
+        magnitude: n,
+      });
+    }
+  }
+
+  /** Eventos evolutivos reais: primeiras estruturas expressas, primeiros animais em terra, mudanças de bioma. */
+  private detectStage3Events(): void {
+    const pool = this.pool, pl = this.planet;
+    const names = ['segmentos', 'membros', 'nadadeiras', 'olhos', 'camuflagem', 'escalada', 'adaptação terrestre', 'antenas', 'cauda propulsora'];
+    const idxs = [T.SEG, T.LIMBS, T.FINS, T.EYES, T.CAMO, T.CLIMB, T.TERR, T.ANT, T.TAIL];
+    const cnt = new Int32Array(idxs.length);
+    const perSp = new Map<string, Map<number, number>>();
+    let onLand = 0;
+    for (let i = 0; i < pool.used; i++) {
+      if (!pool.alive[i]) continue;
+      const tb = i * TR;
+      if (pl.land[pool.cell[i]]) onLand++;
+      for (let k = 0; k < idxs.length; k++) {
+        if (pool.tr[tb + idxs[k]] > 0) {
+          cnt[k]++;
+          if (!this.structuresSeen.has(names[k])) {
+            const m = perSp.get(names[k]) ?? new Map<number, number>();
+            m.set(pool.species[i], (m.get(pool.species[i]) ?? 0) + 1);
+            perSp.set(names[k], m);
+          }
+        }
+      }
+    }
+    for (let k = 0; k < idxs.length; k++) {
+      if (cnt[k] >= 8 && !this.structuresSeen.has(names[k]) && pool.count > 0) {
+        this.structuresSeen.add(names[k]);
+        const top = [...(perSp.get(names[k]) ?? [])].sort((a, b) => b[1] - a[1])[0];
+        const sp = top ? this.species.get(top[0]) : null;
+        this.events.add({
+          tick: this.tick,
+          type: 'adaptation',
+          title: `Surgem ${names[k]}`,
+          text: `${cnt[k]} indivíduos (${((cnt[k] / pool.count) * 100).toFixed(1)}% da população) passaram a expressar ${names[k]}${sp ? `, principalmente em ${sp.name}` : ''}. A estrutura surgiu por mutações herdadas e se mantém enquanto seus benefícios superarem o custo de manutenção.`,
+          speciesId: sp?.id,
+          magnitude: cnt[k],
+        });
+      }
+    }
+    if (onLand >= 3 && !this.structuresSeen.has('terra')) {
+      this.structuresSeen.add('terra');
+      this.events.add({ tick: this.tick, type: 'adaptation', title: 'Animais em terra firme', text: `${onLand} organismos vivem fora d'água, em células continentais — apenas possível porque possuem membros e integumento que retém água.`, magnitude: onLand });
+    }
+    // mudanças de bioma: compara com ~1500 ticks atrás, citando as causas medidas
+    const h = this.history;
+    const look = Math.min(h.ticks.length - 1, 60);
+    if (look >= 20 && this.tick - this.lastBiomeEvent > 1500) {
+      const keys: [string, string][] = [['bForest', 'Floresta'], ['bGrass', 'Pradaria'], ['bDesert', 'Deserto'], ['bTundra', 'Tundra'], ['bSwamp', 'Pântano'], ['bShrub', 'Arbustal']];
+      for (const [key, label] of keys) {
+        const ser = h.series[key];
+        const a = ser[ser.length - 1 - look], b = ser[ser.length - 1];
+        if (Math.max(a, b) > 0.02 && Math.abs(b - a) > 0.25 * Math.max(a, b) && Math.abs(b - a) > 0.015) {
+          this.lastBiomeEvent = this.tick;
+          const dT = h.series.landTemp[h.series.landTemp.length - 1] - h.series.landTemp[h.series.landTemp.length - 1 - look];
+          const dW = h.series.landWater[h.series.landWater.length - 1] - h.series.landWater[h.series.landWater.length - 1 - look];
+          const dC = h.series.cover[h.series.cover.length - 1] - h.series.cover[h.series.cover.length - 1 - look];
+          this.events.add({
+            tick: this.tick,
+            type: 'biome',
+            title: `${label} ${b > a ? 'avança' : 'recua'}`,
+            text: `${label}: ${(a * 100).toFixed(1)}% → ${(b * 100).toFixed(1)}% da superfície em ${look * P.HISTORY_EVERY} ticks. Medido no período: temperatura média em terra ${dT >= 0 ? '+' : ''}${dT.toFixed(1)} °C, umidade do solo ${dW >= 0 ? '+' : ''}${(dW * 100).toFixed(0)} p.p., cobertura vegetal ${dC >= 0 ? '+' : ''}${(dC * 100).toFixed(0)} p.p.`,
+            magnitude: b - a,
+          });
+          break;
+        }
+      }
+    }
+  }
+  private lastBiomeEvent = -9999;
+
+  private stage3Series(): Record<string, number> {
+    if (!this.stage3 || !this.flora) return {};
+    const t = computeTerrain(this);
+    const a = t.areas;
+    return {
+      plants: this.flora.pool.count,
+      plantMass: this.flora.totalMass(),
+      cover: landMean(this, 'cover'),
+      canopy: landMean(this, 'lai'),
+      bForest: a[10], bGrass: a[8], bShrub: a[9], bDesert: a[6], bTundra: a[5] + a[4], bSwamp: a[11],
+      landTemp: landMean(this, 'temp'),
+      landWater: landMean(this, 'water'),
+    };
   }
 
   sampleHistory(): void {
@@ -741,7 +972,9 @@ export class Simulation {
       temp: pop ? tsum / pop : 0, nPhoto, nMixo, nOsmo, nPred, births: this.births, deaths,
       mSize: gsum[G.SIZE] * inv, mPhoto: gsum[G.PHOTO] * inv, mOsmo: gsum[G.OSMO] * inv, mPred: gsum[G.PRED] * inv,
       mMotil: gsum[G.MOTIL] * inv, mDef: gsum[G.DEFENSE] * inv, mTopt: gsum[G.TOPT] * inv, mMeta: gsum[G.META] * inv, mTtol: gsum[G.TTOL] * inv,
+      ...this.stage3Series(),
     });
+    if (this.stage3) this.detectStage3Events();
     this.births = 0;
     for (const k of Object.keys(this.deathsInterval) as DeathCause[]) this.deathsInterval[k] = 0;
     // decaimento dos fluxos tróficos
@@ -788,25 +1021,10 @@ export class Simulation {
     }
   }
 
-  /** Introduz uma variante genética em poucos indivíduos; ela terá de sobreviver à seleção. */
-  introduceVariant(speciesId: number, gene: number, delta: number, n: number): number {
-    const pool = this.pool;
-    let done = 0;
-    for (let i = 0; i < pool.used && done < n; i++) {
-      if (!pool.alive[i] || pool.species[i] !== speciesId) continue;
-      if (this.rng.next() > 0.1) continue;
-      const o = i * GENE_COUNT + gene;
-      pool.genes[o] = Math.max(0, Math.min(1, pool.genes[o] + delta));
-      deriveTraits(pool.genes, i * GENE_COUNT, pool.tr, i * TR);
-      done++;
-    }
-    return done;
-  }
-
   exportInternal() {
     return {
       lastBiomass: this.lastBiomass, lastEventTick: this.lastEventTick, topSpecies: this.topSpecies,
-      extinctionsInWindow: this.extinctionsInWindow,
+      extinctionsInWindow: this.extinctionsInWindow, lastBiomeEvent: this.lastBiomeEvent,
     };
   }
   importInternal(d: any): void {
@@ -814,6 +1032,7 @@ export class Simulation {
     this.lastEventTick = d.lastEventTick;
     this.topSpecies = d.topSpecies;
     this.extinctionsInWindow = d.extinctionsInWindow;
+    this.lastBiomeEvent = d.lastBiomeEvent ?? -9999;
   }
 
   // ------------------------------------------------------------------ consultas
@@ -823,13 +1042,13 @@ export class Simulation {
     const wm = this.planet.totalMass();
     let org = 0;
     for (let i = 0; i < this.pool.used; i++) if (this.pool.alive[i]) org += this.pool.mass[i];
-    return wm.nutrient + wm.detritus + wm.reservoir + org;
+    return wm.nutrient + wm.detritus + wm.reservoir + org + (this.flora ? this.flora.totalMass() : 0);
   }
 
   massBreakdown() {
     const wm = this.planet.totalMass();
     let org = 0;
     for (let i = 0; i < this.pool.used; i++) if (this.pool.alive[i]) org += this.pool.mass[i];
-    return { organisms: org, ...wm };
+    return { organisms: org, ...wm, plants: this.flora ? this.flora.totalMass() : 0 };
   }
 }

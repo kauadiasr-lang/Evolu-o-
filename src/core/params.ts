@@ -39,6 +39,7 @@ export const P = {
   // --- morte
   SENESCENCE: 0.03,
   THERMAL_STRESS: 0.9,
+  DESICCATION: 0.25, // Etapa 3: custo de viver fora d'água sem integumento adaptado
   // --- movimento
   SPEED_K: 0.12,
   BROWN: 0.025,

@@ -7,7 +7,11 @@ import type { PaintMode } from '../core/simulation';
 import { drawLines, drawTree, drawWeb, fmt, hitTest, type Hit, type SeriesDef } from '../render/charts';
 import { MapRenderer, QUALITY, rampCss, type QualityLevel } from '../render/mapRenderer';
 import type { CellInfo, InspectInfo, StatsPayload } from '../worker/protocol';
-import { drawPortrait, ecoHtml, esc, eventsHtml, inspectHtml, speciesDetailHtml, speciesListHtml } from './panels';
+import { biomesHtml, compareHtml, drawPortrait, ecoHtml, esc, eventsHtml, floraDetailHtml, floraListHtml, inspectHtml, plantInspectHtml, speciesDetailHtml, speciesListHtml } from './panels';
+import { drawPlantPortrait } from '../render/plants';
+import { ARCHETYPES, type ArchetypeKind } from '../core/archetypes';
+import { BIOME_INFO } from '../core/biomes';
+import type { FloraLineageInfo, PlantInfo } from '../worker/protocol';
 import { SimClient } from './simClient';
 import { storage } from './storage';
 
@@ -23,6 +27,11 @@ let stats: StatsPayload | null = null;
 let m0 = 0; // massa total inicial (para exibir a conservação)
 let selectedSp = 0;
 let inspected: InspectInfo | null = null;
+let inspectedPlant: PlantInfo | null = null;
+let selectedLin = 0;
+let compareMode = false;
+let compareSp = 0;
+let archetype: ArchetypeKind = 'swimmer';
 let layer: LayerKind = 'ocean';
 let layerBeforeSpecies: LayerKind = 'ocean';
 type ToolId = 'observe' | PaintMode;
@@ -83,12 +92,14 @@ window.addEventListener('keydown', (e) => {
 });
 
 // camadas
-const LAYERS: LayerKind[] = ['ocean', 'temp', 'light', 'nutrient', 'detritus', 'biomass', 'biodiversity', 'density', 'species'];
-const SHORT: Record<LayerKind, string> = { ocean: 'Oceano', temp: 'Temperatura', light: 'Luz', nutrient: 'Nutrientes', detritus: 'Detritos', biomass: 'Biomassa', biodiversity: 'Biodiversidade', density: 'Densidade', species: 'Espécie' };
+const LAYERS: LayerKind[] = ['ocean', 'biome', 'temp', 'moisture', 'vegetation', 'light', 'nutrient', 'detritus', 'biomass', 'biodiversity', 'density', 'species'];
+const STAGE3_LAYERS = new Set<LayerKind>(['biome', 'moisture', 'vegetation']);
+const SHORT: Record<LayerKind, string> = { ocean: 'Oceano', temp: 'Temperatura', light: 'Luz', nutrient: 'Nutrientes', detritus: 'Detritos', biomass: 'Biomassa', biodiversity: 'Biodiversidade', density: 'Densidade', species: 'Espécie', biome: 'Biomas', moisture: 'Umidade', vegetation: 'Vegetação' };
 const layersEl = $('layers');
 LAYERS.forEach((k) => {
   const b = document.createElement('button');
   b.dataset.l = k;
+  if (STAGE3_LAYERS.has(k)) b.classList.add('s3only');
   b.textContent = SHORT[k];
   b.onclick = () => {
     if (k === 'species' && !selectedSp) return;
@@ -115,9 +126,11 @@ const TOOLS: [ToolId, string, string][] = [
   ['seed', 'Semear vida', 'Introduz protocélulas usando o nutriente local'],
   ['erupt', 'Erupção', 'Abre uma fenda: libera minerais e aquece (mata no epicentro)'],
   ['impact', 'Impacto', 'Asteroide: devasta a região'],
+  ['archetype', 'Semear plano corporal', 'Sandbox: introduz uma linhagem com outro plano corporal; só a seleção natural decide se ela persiste'],
 ];
 const toolsEl = $('tools');
-toolsEl.innerHTML = `<div class="tl">Ferramentas</div><div class="trow" id="trow"></div><div class="brushr">Raio <input type="range" id="brush-r" min="1" max="10" value="3" /><span id="brush-v">3</span></div>`;
+toolsEl.innerHTML = `<div class="tl">Ferramentas</div><div class="trow" id="trow"></div><div class="brushr">Raio <input type="range" id="brush-r" min="1" max="10" value="3" /><span id="brush-v">3</span></div><div class="brushr s3only">Plano <select id="arch-sel">${(Object.keys(ARCHETYPES) as ArchetypeKind[]).map((k) => `<option value="${k}">${ARCHETYPES[k].label}</option>`).join('')}</select></div>`;
+($('arch-sel') as HTMLSelectElement).onchange = (e) => { archetype = (e.target as HTMLSelectElement).value as ArchetypeKind; };
 TOOLS.forEach(([k, label, title]) => {
   const b = document.createElement('button');
   b.textContent = label;
@@ -267,11 +280,11 @@ canvas.addEventListener('wheel', (e) => {
 function applyBrush(sx: number, sy: number, first: boolean) {
   const [wx, wy] = renderer.screenToWorld(sx, sy);
   if (wy < 0 || wy >= renderer.h) return;
-  const oneShot = tool === 'seed' || tool === 'erupt' || tool === 'impact';
+  const oneShot = tool === 'seed' || tool === 'erupt' || tool === 'impact' || tool === 'archetype';
   const now = performance.now();
   if (!first && (oneShot || now - lastPaint < 60)) return;
   lastPaint = now;
-  client.send({ t: 'paint', mode: tool as PaintMode, x: ((wx % renderer.w) + renderer.w) % renderer.w, y: wy, r: renderer.brush.r });
+  client.send({ t: 'paint', mode: tool as PaintMode, x: ((wx % renderer.w) + renderer.w) % renderer.w, y: wy, r: renderer.brush.r, kind: archetype });
 }
 
 client.onCell = (c: CellInfo) => {
@@ -291,21 +304,35 @@ client.onCell = (c: CellInfo) => {
   tip.style.top = Math.min(canvas.clientHeight - 180, r.y + 16) + 'px';
 };
 
-client.onInspect = (i) => {
-  if (!i && tapWorld) {
+client.onInspect = (i, plant) => {
+  if (!i && !plant && tapWorld) {
     // toque em área vazia: mostra os dados da célula (substitui o hover, que não existe no toque)
     pendingTapTip = { ...tapWorld };
     client.send({ t: 'cell', x: tapWorld.x, y: tapWorld.y });
   }
   inspected = i;
+  inspectedPlant = plant;
   renderer.dirty = true;
   renderer.selectedOrganism = i ? { x: i.x, y: i.y } : null;
   if (i) {
     selectSpecies(i.speciesId, false);
     setSideTab('sp');
     if (isMobile) openSheet('side'); // no toque não há hover: mostra a ficha do organismo
+  } else if (plant) {
+    selectedLin = plant.lineageId;
+    setSideTab('fl');
+    if (isMobile) openSheet('side');
   }
+  spRenderKey = '';
   renderSide();
+};
+client.onTerrain = (t) => renderer.setTerrain(t);
+client.onTrail = (e) => {
+  const el = document.getElementById('trail-strip');
+  if (!el || Number(el.dataset.sp) !== e.species) return;
+  if (e.items.length < 2) { el.innerHTML = '<span class="muted" style="font-size:11px">Ainda sem histórico suficiente (a trilha é amostrada a cada 400 ticks).</span>'; return; }
+  el.innerHTML = e.items.map((it) => `<figure><canvas width="76" height="76" data-tvis="${it.vis.join(',')}"></canvas><figcaption>${formatAge(it.tick).replace(' milhões de anos', ' Ma').replace(' mil anos', ' ka').replace(' bilhões de anos', ' Ga')}</figcaption></figure>`).join('<span class="arrow">→</span>');
+  el.querySelectorAll<HTMLCanvasElement>('canvas[data-tvis]').forEach((c) => drawPortrait(c, c.dataset.tvis!.split(',').map(Number), 0));
 };
 
 // ------------------------------------------------------------------ seleção de espécie
@@ -351,8 +378,15 @@ const paneSp = $('pane-sp');
 paneSp.addEventListener('click', (e) => {
   const t = e.target as HTMLElement;
   if (t.id === 'tg-ext') { showExtinct = !showExtinct; renderSide(); return; }
+  if (t.id === 'btn-compare') { compareMode = !compareMode; spRenderKey = ''; renderSide(); return; }
+  if (t.id === 'btn-compare-off') { compareSp = 0; compareMode = false; spRenderKey = ''; renderSide(); return; }
   const row = t.closest('[data-sp]') as HTMLElement | null;
+  if (row && compareMode && selectedSp && Number(row.dataset.sp) !== selectedSp) { compareSp = Number(row.dataset.sp); compareMode = false; spRenderKey = ''; renderSide(); return; }
   if (row) selectSpecies(Number(row.dataset.sp));
+});
+$('pane-fl').addEventListener('click', (e) => {
+  const row = (e.target as HTMLElement).closest('[data-pl]') as HTMLElement | null;
+  if (row) { selectedLin = Number(row.dataset.pl) === selectedLin ? 0 : Number(row.dataset.pl); renderSide(); }
 });
 $('pane-ev').addEventListener('click', (e) => {
   const row = (e.target as HTMLElement).closest('[data-sp]') as HTMLElement | null;
@@ -367,16 +401,31 @@ function renderSide() {
   const st = stats;
   if (sideTab === 'sp') {
     const sel = selectedSp ? st.species[selectedSp - 1] : null;
-    const key = st.species.length + ':' + selectedSp + ':' + st.species.reduce((a, s) => a + s.count, 0) + ':' + showExtinct + ':' + (inspected?.id ?? 0) + ':' + (inspected ? inspected.age : 0);
+    const key = st.species.length + ':' + selectedSp + ':' + st.species.reduce((a, s) => a + s.count, 0) + ':' + showExtinct + ':' + (inspected?.id ?? 0) + ':' + (inspected ? inspected.age : 0) + ':' + compareSp + compareMode;
     if (key === spRenderKey) return;
     spRenderKey = key;
     const scroll = paneSp.scrollTop;
     paneSp.innerHTML =
       (inspected ? '<h4>Organismo selecionado</h4>' + inspectHtml(inspected) : '') +
+      (sel && compareSp && st.species[compareSp - 1] && compareSp !== selectedSp ? compareHtml(sel, st.species[compareSp - 1]) : '') +
+      (compareMode ? '<div class="card" style="border-color:var(--accent)">Clique noutra espécie da lista para compará-la com a selecionada.</div>' : '') +
       (sel ? '<h4>Espécie selecionada</h4>' + speciesDetailHtml(st, sel) : '<div class="muted" style="margin-bottom:8px">Clique numa espécie (ou num organismo no mapa) para ver sua distribuição, genoma e custos evolutivos.</div>') +
       speciesListHtml(st, selectedSp, showExtinct);
     paneSp.scrollTop = scroll;
     paneSp.querySelectorAll<HTMLCanvasElement>('canvas[data-vis]').forEach((c) => drawPortrait(c, c.dataset.vis!.split(',').map(Number), 0, 22));
+    if (sel) client.send({ t: 'trail', species: sel.id });
+    if (sel && compareSp && st.species[compareSp - 1]) {
+      const ca = document.getElementById('cmp-a') as HTMLCanvasElement | null, cb = document.getElementById('cmp-b') as HTMLCanvasElement | null;
+      if (ca) drawPortrait(ca, sel.vis, 0);
+      if (cb) drawPortrait(cb, st.species[compareSp - 1].vis, 0);
+    }
+  } else if (sideTab === 'fl') {
+    const pane = $('pane-fl');
+    const scroll = pane.scrollTop;
+    const lin: FloraLineageInfo | undefined = st.flora?.lineages.find((l) => l.id === selectedLin);
+    pane.innerHTML = (inspectedPlant ? '<h4>Planta selecionada</h4>' + plantInspectHtml(inspectedPlant) : '') + (lin ? '<h4>Linhagem selecionada</h4>' + floraDetailHtml(lin, st) : '') + floraListHtml(st, selectedLin);
+    pane.scrollTop = scroll;
+    pane.querySelectorAll<HTMLCanvasElement>('canvas[data-pvis]').forEach((c) => drawPlantPortrait(c, c.dataset.pvis!.split(',').map(Number), 0));
   } else if (sideTab === 'eco') {
     $('pane-eco').innerHTML = ecoHtml(st, m0);
   } else if (sideTab === 'ev') {
@@ -398,6 +447,7 @@ $('pane-pl').innerHTML = `
   </div>
   <h4>Estado do planeta</h4>
   <div class="card"><div class="kv" id="pl-kv"></div></div>
+  <div id="pl-biomes"></div>
   <h4>Geologia</h4>
   <div class="card">
     <div class="row sp-between"><span>Pressão geológica</span><span class="mono" id="geo-v"></span></div>
@@ -421,6 +471,7 @@ function updatePlanetPane() {
   $('pl-kv').innerHTML = `<span>Temperatura média</span><span>${p.meanTemp.toFixed(1)} °C</span><span>Ajuste climático</span><span>${p.climateOffset.toFixed(1)} → ${p.climateTarget.toFixed(0)} °C</span><span>Estação</span><span>${p.season > 0.3 ? 'verão boreal' : p.season < -0.3 ? 'inverno boreal' : 'transição'}</span><span>Sedimento enterrado</span><span>${fmt(stats.mass.reservoir)}</span>`;
   $('geo-v').textContent = `${p.pressure.toFixed(0)} / 260`;
   ($('geo-bar') as HTMLElement).style.width = Math.min(100, (p.pressure / 260) * 100) + '%';
+  $('pl-biomes').innerHTML = biomesHtml(stats);
 }
 
 // ------------------------------------------------------------------ IA
@@ -430,7 +481,7 @@ $('pane-ai').innerHTML = `
     <div class="row sp-between"><label><input type="checkbox" id="ai-on" /> IA conectada</label><span id="ai-status" class="muted"><span class="dot"></span>desligada</span></div>
     <div class="muted" style="font-size:11px" id="ai-help">A simulação funciona integralmente sem IA. Sem conexão, o cronista local narra os fatos. Para usar um modelo de linguagem, defina a chave do provedor (<code>ANTHROPIC_API_KEY</code>, ou <code>EVOLVERE_AI_PROVIDER=openai</code> + <code>OPENAI_API_KEY</code>) e execute <code>npm run ai-proxy</code>: a chave fica no backend local, nunca no navegador.</div>
     <div class="row"><label><input type="checkbox" id="ai-auto" checked /> Crônica automática (a cada ~600 ticks, se houver novidades)</label></div>
-    <div class="row" style="flex-wrap:wrap"><button id="ai-chron" class="primary">Escrever crônica</button><button id="ai-hyp">Hipóteses</button><button id="ai-evt">Propor acontecimentos</button></div>
+    <div class="row" style="flex-wrap:wrap"><button id="ai-chron" class="primary">Escrever crônica</button><button id="ai-hyp">Hipóteses</button><button id="ai-evt">Propor acontecimentos</button><button id="ai-sp" class="s3only">Analisar espécie</button><button id="ai-bio" class="s3only">Narrar biomas</button></div>
     <div class="row"><label><input type="checkbox" id="ai-autoevt" /> Diretora autônoma: aplica propostas <b>validadas</b> (máx. 4 por 3000 ticks)</label></div>
     <div class="muted" style="font-size:11px">Acontecimentos são entradas ambientais (clima, nutrientes, geologia, variantes raras). A simulação decide quem sobrevive.</div>
   </div>
@@ -480,6 +531,12 @@ $('ai-hyp').onclick = async () => {
   suggestionResults.clear();
   renderSuggestions();
 };
+$('ai-sp').onclick = async () => {
+  if (!stats) return;
+  const sp = selectedSp ? stats.species[selectedSp - 1] : stats.species.filter((x) => x.extinctTick < 0).sort((a, b) => b.count - a.count)[0];
+  addChronicle(await director.analyzeSpecies(stats, sp ? `${sp.name} (id ${sp.id})` : ''));
+};
+$('ai-bio').onclick = async () => { if (stats) addChronicle(await director.narrateBiomes(stats)); };
 $('ai-evt').onclick = async () => {
   if (!stats) return;
   if (!director.enabled) { $('ai-hyp-out').innerHTML = '<div class="card muted">Ative a IA para propor acontecimentos.</div>'; return; }
@@ -508,7 +565,7 @@ function renderSuggestions() {
       case 'climate_shift': return `${base}variação climática de ${s.deltaT > 0 ? '+' : ''}${s.deltaT} °C`;
       case 'eruption': return `${base}erupção em (${s.x.toFixed(0)}, ${s.y.toFixed(0)}), massa ${s.amount.toFixed(0)}`;
       case 'nutrient_upwelling': return `${base}ressurgência em (${s.x.toFixed(0)}, ${s.y.toFixed(0)}), massa ${s.amount.toFixed(0)}`;
-      case 'adaptation': return `${base}variante de ${s.gene} (${s.delta > 0 ? '+' : ''}${s.delta}) na espécie #${s.speciesId}`;
+      case 'hypothesis': return `${base}hipótese${s.speciesId ? ` (espécie #${s.speciesId})` : ''}: ${s.text}`;
     }
   };
   out.innerHTML = `<h4>Propostas da IA</h4>${hypText ? `<div class="card" style="white-space:pre-wrap">${esc(hypText)}</div>` : ''}` + suggestions.map((it, i) => {
@@ -586,16 +643,17 @@ client.onFrame = (f) => {
   $('r-tps').textContent = `${f.tps.toFixed(0)} t/s`;
   const lg = renderer.legend();
   $('lg-title').textContent = LAYER_INFO[lg.name as LayerKind].label + (lg.name === 'species' && selectedSp && stats ? `: ${stats.species[selectedSp - 1]?.name ?? ''}` : '');
-  ($('lg-bar') as HTMLElement).style.background = rampCss(lg.name);
+  ($('lg-bar') as HTMLElement).style.background = lg.name === 'biome' ? `linear-gradient(90deg, ${BIOME_INFO.map((b, i) => `rgb(${b.color.join(',')}) ${(i / BIOME_INFO.length) * 100}% ${((i + 1) / BIOME_INFO.length) * 100}%`).join(',')})` : rampCss(lg.name);
   const unit = LAYER_INFO[lg.name as LayerKind].unit;
-  $('lg-min').textContent = lg.name === 'ocean' ? 'raso' : fmt(lg.min) + unit;
-  $('lg-max').textContent = lg.name === 'ocean' ? 'abissal' : fmt(lg.max) + unit;
+  $('lg-min').textContent = lg.name === 'ocean' ? 'raso' : lg.name === 'biome' ? 'água' : lg.name === 'moisture' || lg.name === 'vegetation' ? 'seco' : fmt(lg.min) + unit;
+  $('lg-max').textContent = lg.name === 'ocean' ? 'abissal' : lg.name === 'biome' ? 'pântano' : lg.name === 'moisture' || lg.name === 'vegetation' ? 'úmido' : fmt(lg.max) + unit;
 };
 
 let lastStatsAt = 0;
 client.onStats = (st) => {
   stats = st;
-  if (!m0 || st.tick === 0) m0 = st.mass.organisms + st.mass.nutrient + st.mass.detritus + st.mass.reservoir;
+  if (!m0 || st.tick === 0) m0 = st.mass.organisms + st.mass.nutrient + st.mass.detritus + st.mass.reservoir + (st.mass.plants ?? 0);
+  document.body.classList.toggle('stage3', st.stage3);
   $('r-age').textContent = isMobile ? formatAge(st.tick).replace(' milhões de anos', ' Ma').replace(' bilhões de anos', ' Ga').replace(' mil anos', ' ka') : formatAge(st.tick);
   $('r-gen').textContent = String(st.maxGen);
   $('r-pop').textContent = fmt(st.pop);
@@ -661,13 +719,13 @@ $('b-new').onclick = () => ($('dlg-new') as HTMLDialogElement).showModal();
 $('new-ok').onclick = () => {
   seed = Math.max(1, Number(($('in-seed') as HTMLInputElement).value) | 0);
   const [w, h] = ($('in-size') as HTMLSelectElement).value.split('x').map(Number);
-  startWorld(seed, w, h, Number(($('in-pop') as HTMLInputElement).value));
+  startWorld(seed, w, h, Number(($('in-pop') as HTMLInputElement).value), ($('in-stage3') as HTMLInputElement).checked);
 };
-function startWorld(sd: number, w = 96, h = 60, pop = 700) {
+function startWorld(sd: number, w = 96, h = 60, pop = 700, stage3 = true) {
   seed = sd;
-  m0 = 0; selectedSp = 0; inspected = null; spRenderKey = ''; lastAutoChron = 0;
+  m0 = 0; selectedSp = 0; inspected = null; inspectedPlant = null; selectedLin = 0; compareSp = 0; compareMode = false; renderer.terrain = null; spRenderKey = ''; lastAutoChron = 0;
   renderer.species = 0; renderer.selectedOrganism = null;
-  client.send({ t: 'init', cfg: { seed: sd, width: w, height: h, initialPopulation: pop, maxOrganisms: w * h * 9 } });
+  client.send({ t: 'init', cfg: { seed: sd, width: w, height: h, initialPopulation: pop, maxOrganisms: w * h * 9, stage3, maxPlants: Math.round(w * h * 2.2) } });
   client.send({ t: 'speed', speed: paused ? 0 : speed });
   setLayer(layer === 'species' ? 'ocean' : layer);
 }
@@ -705,6 +763,14 @@ function frame(t: number) {
     if (dp && selectedSp && stats.species[selectedSp - 1]) drawPortrait(dp, stats.species[selectedSp - 1].vis, renderer.animate ? t / 1000 : 0);
     const ip = document.getElementById('inspect-portrait') as HTMLCanvasElement | null;
     if (ip && inspected) drawPortrait(ip, inspected.vis, renderer.animate ? t / 1000 : 0);
+    const ca = document.getElementById('cmp-a') as HTMLCanvasElement | null, cb = document.getElementById('cmp-b') as HTMLCanvasElement | null;
+    if (ca && selectedSp && stats.species[selectedSp - 1]) drawPortrait(ca, stats.species[selectedSp - 1].vis, renderer.animate ? t / 1000 : 0);
+    if (cb && compareSp && stats.species[compareSp - 1]) drawPortrait(cb, stats.species[compareSp - 1].vis, renderer.animate ? t / 1000 : 0);
+    const pp = document.getElementById('plant-portrait') as HTMLCanvasElement | null;
+    const lin = stats.flora?.lineages.find((l) => l.id === selectedLin);
+    if (pp && lin) drawPlantPortrait(pp, lin.vis, renderer.animate ? t / 1000 : 0);
+    const pi = document.getElementById('plant-inspect') as HTMLCanvasElement | null;
+    if (pi && inspectedPlant) drawPlantPortrait(pi, inspectedPlant.vis, renderer.animate ? t / 1000 : 0);
   }
 }
 window.addEventListener('resize', () => { updateMobile(); renderer.resize(); renderBottom(); });
