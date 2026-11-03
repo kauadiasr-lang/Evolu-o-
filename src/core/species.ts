@@ -151,6 +151,8 @@ export function updateSpecies(
   rng: Rng,
   minDist: number = P.SPECIATION_MIN_DIST,
   gap: number = P.SPECIATION_GAP,
+  /** diagnóstico opcional (testes/ferramentas): recebe as métricas de cada candidato à divisão */
+  diag?: (info: { id: number; n: number; nSmall: number; D: number; wA: number; wB: number; geographic?: boolean; niche?: number }) => void,
 ): SpeciationEvent[] {
   const S = reg.size + 1;
   const members: number[][] = Array.from({ length: S }, () => []);
@@ -218,6 +220,7 @@ export function updateSpecies(
     }
     wA /= nA; wB /= nB;
     const D = geneDistance(cA, 0, cB, 0);
+    diag?.({ id, n: m.length, nSmall, D, wA, wB });
     if (D < minDist || D < gap * Math.max(wA, wB)) continue;
 
     // isolamento: geográfico e/ou ecológico
