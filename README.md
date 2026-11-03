@@ -206,6 +206,12 @@ removida; hipóteses sobre adaptações são texto. Sem IA, o cronista local nar
 - A vida **começa no mar**; plantas colonizam a terra por um gatilho de estado (biomassa fotossintética), e animais só
   chegam à terra se evoluírem (ou forem semeados) membros + integumento. Nas sementes testadas, a emergência
   espontânea de animais terrestres não ocorreu em 30.000 ticks; o sandbox existe para observar o plano corporal.
+- **Diversificação de animais no modo Etapa 3 é menos garantida que na Etapa 1.** Em 30.000 ticks, 2 de 6 sementes
+  (1 e 4) terminaram com **uma única espécie** (a separação entre os dois agrupamentos fica ≈ igual à dispersão interna,
+  razão ≈ 0,9–1,0 contra o limiar 1,5); as outras 4 terminaram com 14–19 espécies vivas. Na Etapa 1 as 3 sementes
+  diversificaram. `npm run test:long` falha na semente 1 da Etapa 3 por esse motivo (a asserção "mais de uma espécie" foi
+  mantida de propósito); o mundo permanece estável (população, plantas e massa). Para investigar:
+  `npx tsx scripts/diag-speciation.ts <semente> [off]`.
 - Plantas: florestas (média de altura > 1,6) surgem só em regiões úmidas e devagar; predominam musgos, ervas e arbustos.
 - Camuflagem só protege quando o matiz do corpo casa com o substrato local; o substrato de vegetação usa o matiz médio.
 - Os ciclos de O₂/CO₂ e a atmosfera ainda não existem; apenas a matéria (nutriente) circula.
