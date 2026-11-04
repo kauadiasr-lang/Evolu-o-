@@ -66,6 +66,16 @@ export function localChronicle(d: Digest): Chronicle {
   if (d.flora) parts.push(`A flora soma ${d.flora.plantas} plantas em ${d.flora.linhagensVivas} linhagens vivas${d.flora.principais[0] ? `; a mais abundante é ${d.flora.principais[0].nome} (${d.flora.principais[0].forma})` : ''}.`);
   const anat = top?.anatomia?.estruturas?.length ? top.anatomia.estruturas : null;
   if (top && anat) parts.push(`${top.nome} expressa ${anat.join(', ')} (plano corporal ${top.anatomia!.planoCorporal}).`);
+  const dg = d.diagnostico;
+  if (dg) {
+    const top = [...dg.pressoes].sort((a, b) => b.indicadorPercentual - a.indicadorPercentual)[0];
+    if (top && top.indicadorPercentual >= 10) parts.push(`O indicador de pressão mais alto é "${top.nome}" (${top.indicadorPercentual}%).`);
+    if (dg.ambienteEmCurso.length) parts.push(`Alterações ambientais em curso: ${dg.ambienteEmCurso.join('; ')}.`);
+    const dom = dg.especiacao[0];
+    if (dom && dom.veredito !== 'split' && dom.veredito !== 'too_small') parts.push(`${dom.especie} não se dividiu: ${dom.explicacao}.`);
+    const ex = dg.extincoesRecentes[0];
+    if (ex) parts.push(`A extinção mais recente registrada foi a de ${ex.nome} (causa provável: ${ex.causaProvavel.toLowerCase()}).`);
+  }
   const m = d.mortalidade;
   const total = Object.values(m).reduce((a, b) => a + b, 0) || 1;
   const topCause = Object.entries(m).sort((a, b) => b[1] - a[1])[0];

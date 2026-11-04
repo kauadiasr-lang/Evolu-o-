@@ -5,6 +5,8 @@ import { AIDirector, parseSuggestions } from '../src/ai/director';
 import { applySuggestion, validateSuggestion } from '../src/core/validate';
 import { createHandler } from '../server/ai-proxy.mjs';
 import { smallSim, stage3Sim, statsOf } from './helpers';
+import { buildStats } from '../src/worker/summary';
+import { diagnosticsReport } from '../src/core/diagnostics';
 import { BASE_GENES, GENE_COUNT } from '../src/core/genome';
 
 describe('digest e narrativa ancorada nos dados', () => {
@@ -250,5 +252,43 @@ describe('Fase 6: a IA analisa espécies e biomas com dados reais (e funciona se
       expect(p).not.toMatch(/"delta"\s*:\s*0\.\d+.*"gene"/);
     }
     expect(MODES).toEqual(expect.arrayContaining(['species', 'biomes']));
+  });
+});
+
+describe('Etapa 4: a IA recebe indicadores MEDIDOS e trata causas como hipóteses', () => {
+  const sim = smallSim({ seed: 3 });
+  sim.run(1500);
+  sim.setClimate(4);
+  sim.run(200);
+  const diag = diagnosticsReport(sim);
+  const st = buildStats(sim, diag);
+  const d = buildDigest(st);
+
+  it('o digest traz pressões, diversidade, veredito de especiação e extinções vindos do motor', () => {
+    expect(d.diagnostico).toBeDefined();
+    const dg = d.diagnostico!;
+    expect(dg.pressoes.length).toBe(diag.pressure.items.length);
+    for (const p of dg.pressoes) expect(p.indicadorPercentual).toBe(Math.round(diag.pressure.items.find((x) => x.label === p.nome)!.level * 100));
+    expect(dg.ambienteEmCurso.join(' ')).toMatch(/clima/);
+    expect(dg.diversidadeGenetica.fracaoDominantePercentual).toBe(Math.round(diag.genetic.dominantShare * 100));
+    expect(dg.especiacao[0].veredito).toBe(diag.speciation[0].verdict);
+    expect(dg.extincoesRecentes.length).toBe(Math.min(4, diag.extinctions.length));
+  });
+
+  it('sem diagnóstico (modo antigo) o digest continua válido, apenas sem o campo', () => {
+    expect(buildDigest(buildStats(sim)).diagnostico).toBeUndefined();
+  });
+
+  it('o cronista local descreve o diagnóstico usando só números do digest (sem inventar)', () => {
+    const c = localChronicle(d);
+    expect(c.text).toMatch(/Alterações ambientais em curso/);
+    expect(ungroundedNumbers(c.text, d)).toEqual([]);
+  });
+
+  it('o prompt orienta a tratar causas como hipóteses e a aceitar a estabilidade como resultado válido', async () => {
+    const { SYSTEM } = await import('../server/prompts.mjs');
+    expect(SYSTEM).toMatch(/hipótese/);
+    expect(SYSTEM).toMatch(/nunca afirme causas como fatos/);
+    expect(SYSTEM).toMatch(/permanece igual/);
   });
 });

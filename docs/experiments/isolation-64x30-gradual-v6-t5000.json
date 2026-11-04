@@ -1,0 +1,374 @@
+{
+ "name": "isolation",
+ "value": 6,
+ "abrupt": false,
+ "changeAt": 8000,
+ "total": 5000,
+ "cfg": {
+  "width": 64,
+  "height": 30,
+  "stage3": false,
+  "maxOrganisms": 17280,
+  "maxPlants": 4224
+ },
+ "seeds": [
+  1,
+  2,
+  3,
+  4
+ ],
+ "results": [
+  {
+   "seed": 1,
+   "differential": false,
+   "divergence": {
+    "D": 0.07232331145151248,
+    "withinA": 0.06632106223688387,
+    "withinB": 0.043811693256507425,
+    "ratio": 1.0905029113253635,
+    "nA": 3081,
+    "nB": 1338,
+    "topGenes": [
+     {
+      "key": "REPRO",
+      "label": "Limiar reprodutivo",
+      "delta": 0.21329033374786377
+     },
+     {
+      "key": "NUCLEUS",
+      "label": "Núcleo",
+      "delta": 0.1481260359287262
+     },
+     {
+      "key": "SENSE",
+      "label": "Quimiotaxia",
+      "delta": -0.12622389197349548
+     },
+     {
+      "key": "PRED",
+      "label": "Predação",
+      "delta": -0.08915323996916413
+     },
+     {
+      "key": "ELONG",
+      "label": "Alongamento",
+      "delta": 0.08496125414967537
+     }
+    ]
+   },
+   "speciesAlive": 1,
+   "speciationEvents": 0,
+   "massDrift": -3.0641309595445074e-13,
+   "nWest": 3081,
+   "nEast": 1338
+  },
+  {
+   "seed": 1,
+   "differential": true,
+   "divergence": {
+    "D": 0.1047659386594321,
+    "withinA": 0.08904178755081392,
+    "withinB": 0.04795647985844112,
+    "ratio": 1.1765929406981503,
+    "nA": 1744,
+    "nB": 922,
+    "topGenes": [
+     {
+      "key": "META",
+      "label": "Metabolismo",
+      "delta": -0.1917097419500351
+     },
+     {
+      "key": "TOPT",
+      "label": "Temperatura ótima",
+      "delta": 0.1672585904598236
+     },
+     {
+      "key": "INVEST",
+      "label": "Investimento na prole",
+      "delta": -0.15460386872291565
+     },
+     {
+      "key": "SIZE",
+      "label": "Tamanho",
+      "delta": -0.14981138706207275
+     },
+     {
+      "key": "AFFIN",
+      "label": "Afinidade por nutrientes",
+      "delta": -0.13855960965156555
+     }
+    ]
+   },
+   "speciesAlive": 1,
+   "speciationEvents": 0,
+   "massDrift": -3.083620131725356e-13,
+   "nWest": 1744,
+   "nEast": 922
+  },
+  {
+   "seed": 2,
+   "differential": false,
+   "divergence": {
+    "D": 0,
+    "withinA": 0.07412378018314345,
+    "withinB": 0,
+    "ratio": 0,
+    "nA": 4461,
+    "nB": 0,
+    "topGenes": [
+     {
+      "key": "PHOTO",
+      "label": "Fotossíntese",
+      "delta": -0.6819254755973816
+     },
+     {
+      "key": "INVEST",
+      "label": "Investimento na prole",
+      "delta": -0.495632529258728
+     },
+     {
+      "key": "SYMM",
+      "label": "Simetria",
+      "delta": -0.48950496315956116
+     },
+     {
+      "key": "NUCLEUS",
+      "label": "Núcleo",
+      "delta": -0.4802728593349457
+     },
+     {
+      "key": "TOPT",
+      "label": "Temperatura ótima",
+      "delta": -0.47295138239860535
+     }
+    ]
+   },
+   "speciesAlive": 4,
+   "speciationEvents": 3,
+   "massDrift": -3.064130959544509e-13,
+   "nWest": 4461,
+   "nEast": 0
+  },
+  {
+   "seed": 2,
+   "differential": true,
+   "divergence": {
+    "D": 0,
+    "withinA": 0.07965739694945402,
+    "withinB": 0,
+    "ratio": 0,
+    "nA": 4639,
+    "nB": 0,
+    "topGenes": [
+     {
+      "key": "PHOTO",
+      "label": "Fotossíntese",
+      "delta": -0.6320785880088806
+     },
+     {
+      "key": "INVEST",
+      "label": "Investimento na prole",
+      "delta": -0.5250212550163269
+     },
+     {
+      "key": "NUCLEUS",
+      "label": "Núcleo",
+      "delta": -0.5077390074729919
+     },
+     {
+      "key": "SYMM",
+      "label": "Simetria",
+      "delta": -0.46885842084884644
+     },
+     {
+      "key": "SAT",
+      "label": "Saturação",
+      "delta": -0.4660847783088684
+     }
+    ]
+   },
+   "speciesAlive": 1,
+   "speciationEvents": 0,
+   "massDrift": -3.0489727145149603e-13,
+   "nWest": 4639,
+   "nEast": 0
+  },
+  {
+   "seed": 3,
+   "differential": false,
+   "divergence": {
+    "D": 0,
+    "withinA": 0.07970710693392431,
+    "withinB": 0,
+    "ratio": 0,
+    "nA": 4106,
+    "nB": 0,
+    "topGenes": [
+     {
+      "key": "PHOTO",
+      "label": "Fotossíntese",
+      "delta": -0.7539926171302795
+     },
+     {
+      "key": "SYMM",
+      "label": "Simetria",
+      "delta": -0.5317586064338684
+     },
+     {
+      "key": "INVEST",
+      "label": "Investimento na prole",
+      "delta": -0.502791166305542
+     },
+     {
+      "key": "SAT",
+      "label": "Saturação",
+      "delta": -0.4912717044353485
+     },
+     {
+      "key": "NUCLEUS",
+      "label": "Núcleo",
+      "delta": -0.4872390925884247
+     }
+    ]
+   },
+   "speciesAlive": 2,
+   "speciationEvents": 1,
+   "massDrift": -3.068461886695808e-13,
+   "nWest": 4106,
+   "nEast": 0
+  },
+  {
+   "seed": 3,
+   "differential": true,
+   "divergence": {
+    "D": 0,
+    "withinA": 0.07447557414742587,
+    "withinB": 0,
+    "ratio": 0,
+    "nA": 3779,
+    "nB": 0,
+    "topGenes": [
+     {
+      "key": "PHOTO",
+      "label": "Fotossíntese",
+      "delta": -0.647212028503418
+     },
+     {
+      "key": "SYMM",
+      "label": "Simetria",
+      "delta": -0.5049104690551758
+     },
+     {
+      "key": "SAT",
+      "label": "Saturação",
+      "delta": -0.502602756023407
+     },
+     {
+      "key": "NUCLEUS",
+      "label": "Núcleo",
+      "delta": -0.4993448555469513
+     },
+     {
+      "key": "INVEST",
+      "label": "Investimento na prole",
+      "delta": -0.47494766116142273
+     }
+    ]
+   },
+   "speciesAlive": 1,
+   "speciationEvents": 0,
+   "massDrift": -3.0706273502714575e-13,
+   "nWest": 3779,
+   "nEast": 0
+  },
+  {
+   "seed": 4,
+   "differential": false,
+   "divergence": {
+    "D": 0.08058667736407818,
+    "withinA": 0.06011149471907904,
+    "withinB": 0.07533761273688178,
+    "ratio": 1.0696738911216748,
+    "nA": 1155,
+    "nB": 5268,
+    "topGenes": [
+     {
+      "key": "META",
+      "label": "Metabolismo",
+      "delta": 0.21937038004398346
+     },
+     {
+      "key": "AFFIN",
+      "label": "Afinidade por nutrientes",
+      "delta": -0.14752745628356934
+     },
+     {
+      "key": "PHOTO",
+      "label": "Fotossíntese",
+      "delta": 0.11213761568069458
+     },
+     {
+      "key": "PATTERN",
+      "label": "Padrão",
+      "delta": 0.09910264983773232
+     },
+     {
+      "key": "INVEST",
+      "label": "Investimento na prole",
+      "delta": 0.08183252811431885
+     }
+    ]
+   },
+   "speciesAlive": 1,
+   "speciationEvents": 0,
+   "massDrift": -3.0381453966367107e-13,
+   "nWest": 1155,
+   "nEast": 5268
+  },
+  {
+   "seed": 4,
+   "differential": true,
+   "divergence": {
+    "D": 0.11886565048154235,
+    "withinA": 0.04555543717723641,
+    "withinB": 0.0763449901117569,
+    "ratio": 1.5569541669668434,
+    "nA": 737,
+    "nB": 4495,
+    "topGenes": [
+     {
+      "key": "TOPT",
+      "label": "Temperatura ótima",
+      "delta": 0.2699753940105438
+     },
+     {
+      "key": "PHOTO",
+      "label": "Fotossíntese",
+      "delta": 0.26391613483428955
+     },
+     {
+      "key": "AFFIN",
+      "label": "Afinidade por nutrientes",
+      "delta": -0.14322972297668457
+     },
+     {
+      "key": "SYMM",
+      "label": "Simetria",
+      "delta": 0.13470017910003662
+     },
+     {
+      "key": "REPRO",
+      "label": "Limiar reprodutivo",
+      "delta": -0.12299008667469025
+     }
+    ]
+   },
+   "speciesAlive": 4,
+   "speciationEvents": 3,
+   "massDrift": -3.064130959544509e-13,
+   "nWest": 737,
+   "nEast": 4495
+  }
+ ]
+}

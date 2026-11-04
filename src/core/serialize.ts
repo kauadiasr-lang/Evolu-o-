@@ -5,7 +5,9 @@ import { GENE_COUNT } from './genome';
 import { TR } from './traits';
 import { PLANT_GENES, type PlantLineage } from './flora';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
+/** versões que sabemos carregar (a 2 não tem os campos da Etapa 4, que têm padrões neutros) */
+const LOADABLE = [2, 3];
 
 export interface SaveData {
   version: number;
@@ -24,6 +26,7 @@ export function exportSave(sim: Simulation): SaveData {
     mass: p.mass.slice(0, u), energy: p.energy.slice(0, u), cell: p.cell.slice(0, u),
     genes: p.genes.slice(0, u * GENE_COUNT), tr: p.tr.slice(0, u * TR), free: p.exportFree(),
     energySrc: sim.energySrc.slice(),
+    regionTemp: pl.regionTemp.slice(), deathBySpecies: sim.deathBySpecies.slice(),
     land: pl.land.slice(), elev: pl.elev.slice(), rain: pl.rain.slice(), soilWater: pl.soilWater.slice(), bgHue: pl.bgHue.slice(),
   };
   const fl = sim.flora;
@@ -56,13 +59,18 @@ export function exportSave(sim: Simulation): SaveData {
     },
     predFlow: Array.from(sim.predFlow.entries()),
     internal: sim.exportInternal(),
+    env: {
+      seasonAmp: pl.seasonAmp, climateRate: pl.climateRate, aridity: pl.aridity, aridityTarget: pl.aridityTarget, aridityRate: pl.aridityRate,
+      lightFactor: pl.lightFactor, lightTarget: pl.lightTarget, lightRate: pl.lightRate, regionActive: pl.regionActive,
+      geologyOn: sim.geologyOn, schedule: sim.schedule, deathsRecent: sim.deathsRecent,
+    },
     stage3: { mrng: sim.mrng.state, flora: floraMeta, seen: [...sim.structuresSeen] },
   };
   return { version: SAVE_VERSION, meta, arrays };
 }
 
 export function importSave(data: SaveData): Simulation {
-  if (data.version !== SAVE_VERSION) throw new Error(`Versão de save incompatível: ${data.version}`);
+  if (!LOADABLE.includes(data.version)) throw new Error(`Versão de save incompatível: ${data.version}`);
   const m = data.meta;
   const sim = new Simulation(m.cfg as SimConfig, false);
   const a = data.arrays;
@@ -113,6 +121,19 @@ export function importSave(data: SaveData): Simulation {
   sim.predFlow = new Map(m.predFlow);
   sim.energySrc = Float64Array.from(a.energySrc as Float64Array);
   sim.importInternal(m.internal);
+  // ---- Etapa 4 (saves antigos não têm estes campos: ficam nos padrões neutros)
+  if (m.env) {
+    const e = m.env;
+    Object.assign(pl, {
+      seasonAmp: e.seasonAmp, climateRate: e.climateRate, aridity: e.aridity, aridityTarget: e.aridityTarget, aridityRate: e.aridityRate,
+      lightFactor: e.lightFactor, lightTarget: e.lightTarget, lightRate: e.lightRate, regionActive: e.regionActive,
+    });
+    sim.geologyOn = e.geologyOn;
+    sim.schedule = e.schedule;
+    sim.deathsRecent = e.deathsRecent;
+    pl.regionTemp.set(a.regionTemp as Float32Array);
+    sim.deathBySpecies = Float64Array.from(a.deathBySpecies as Float64Array);
+  }
   // ---- Etapa 3
   if (a.land) {
     pl.land.set(a.land as Uint8Array);

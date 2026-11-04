@@ -7,7 +7,7 @@ import type { PaintMode } from '../core/simulation';
 import { drawLines, drawTree, drawWeb, fmt, hitTest, type Hit, type SeriesDef } from '../render/charts';
 import { MapRenderer, QUALITY, rampCss, type QualityLevel } from '../render/mapRenderer';
 import type { CellInfo, InspectInfo, StatsPayload } from '../worker/protocol';
-import { biomesHtml, compareHtml, drawPortrait, ecoHtml, esc, eventsHtml, floraDetailHtml, floraListHtml, inspectHtml, plantInspectHtml, speciesDetailHtml, speciesListHtml } from './panels';
+import { biomesHtml, compareHtml, drawPortrait, ecoHtml, esc, evoHtml, eventsHtml, floraDetailHtml, floraListHtml, inspectHtml, plantInspectHtml, speciesDetailHtml, speciesListHtml } from './panels';
 import { drawPlantPortrait } from '../render/plants';
 import { ARCHETYPES, type ArchetypeKind } from '../core/archetypes';
 import { BIOME_INFO } from '../core/biomes';
@@ -426,6 +426,13 @@ function renderSide() {
     pane.innerHTML = (inspectedPlant ? '<h4>Planta selecionada</h4>' + plantInspectHtml(inspectedPlant) : '') + (lin ? '<h4>Linhagem selecionada</h4>' + floraDetailHtml(lin, st) : '') + floraListHtml(st, selectedLin);
     pane.scrollTop = scroll;
     pane.querySelectorAll<HTMLCanvasElement>('canvas[data-pvis]').forEach((c) => drawPlantPortrait(c, c.dataset.pvis!.split(',').map(Number), 0));
+  } else if (sideTab === 'evo') {
+    const pane = $('pane-evo');
+    const scroll = pane.scrollTop;
+    pane.innerHTML = evoHtml(st);
+    pane.scrollTop = scroll;
+    const sp = document.getElementById('evo-spark') as unknown as HTMLCanvasElement | null;
+    if (sp) drawLines(sp, st.history.ticks, st.history.series, [{ key: 'divers', label: 'Variância de nicho', color: '#6fd68a', scale: 4 }, { key: 'tfMean', label: 'Ajuste térmico', color: '#e8b64a' }, { key: 'domShare', label: 'Fração dominante', color: '#6aa8ff' }], { normalize: true });
   } else if (sideTab === 'eco') {
     $('pane-eco').innerHTML = ecoHtml(st, m0);
   } else if (sideTab === 'ev') {
@@ -442,8 +449,19 @@ $('pane-pl').innerHTML = `
   <div class="card">
     <div class="row sp-between"><span>Ajuste de temperatura</span><b id="cl-val" class="mono">0 °C</b></div>
     <input type="range" id="cl-in" min="-10" max="10" step="1" value="0" style="width:100%" />
-    <div class="row"><button id="cl-apply" class="primary">Aplicar gradualmente</button><button id="cl-reset">Restaurar</button></div>
+    <div class="row"><label><input type="checkbox" id="env-abrupt" /> mudança <b>abrupta</b> (padrão: gradual, ~1000 ticks)</label></div>
+    <div class="row"><button id="cl-apply" class="primary">Aplicar</button><button id="cl-reset">Restaurar</button></div>
     <div class="muted" style="font-size:11px">O clima relaxa lentamente para o alvo. Espécies se adaptam, migram ou se extinguem.</div>
+  </div>
+  <h4>Outras pressões ambientais</h4>
+  <div class="card">
+    <div class="row sp-between"><span>Chuvas <span class="muted">(requer terra)</span></span><b id="ar-val" class="mono">100%</b></div>
+    <input type="range" id="ar-in" min="0.3" max="1.5" step="0.05" value="1" style="width:100%" />
+    <div class="row sp-between"><span>Luz na superfície</span><b id="li-val" class="mono">100%</b></div>
+    <input type="range" id="li-in" min="0.3" max="1.3" step="0.05" value="1" style="width:100%" />
+    <div class="row"><button id="env-apply">Aplicar chuvas e luz</button><button id="env-depl" class="danger">Esgotar 40% dos nutrientes</button></div>
+    <div class="row"><label><input type="checkbox" id="env-stable" /> Ambiente estável (sem estações nem erupções naturais)</label></div>
+    <div class="muted" style="font-size:11px">São entradas ambientais: quem sobrevive e evolui continua sendo decidido pela simulação. Nada garante adaptação — a linhagem pode migrar, diminuir ou desaparecer.</div>
   </div>
   <h4>Estado do planeta</h4>
   <div class="card"><div class="kv" id="pl-kv"></div></div>
@@ -461,8 +479,21 @@ $('pane-pl').innerHTML = `
     <div class="muted" style="font-size:11px">Também há pincéis no mapa: aquecer, resfriar, aprofundar, nutrientes, erupção e impacto.</div>
   </div>`;
 $('cl-in').oninput = (e) => ($('cl-val').textContent = `${(e.target as HTMLInputElement).value} °C`);
-$('cl-apply').onclick = () => client.send({ t: 'climate', dT: Number(($('cl-in') as HTMLInputElement).value) });
-$('cl-reset').onclick = () => { ($('cl-in') as HTMLInputElement).value = '0'; $('cl-val').textContent = '0 °C'; client.send({ t: 'climate', dT: 0 }); };
+const abruptOn = () => ($('env-abrupt') as HTMLInputElement).checked;
+$('cl-apply').onclick = () => client.send({ t: 'climate', dT: Number(($('cl-in') as HTMLInputElement).value), abrupt: abruptOn() });
+$('ar-in').oninput = (e) => ($('ar-val').textContent = `${Math.round(Number((e.target as HTMLInputElement).value) * 100)}%`);
+$('li-in').oninput = (e) => ($('li-val').textContent = `${Math.round(Number((e.target as HTMLInputElement).value) * 100)}%`);
+$('env-apply').onclick = () => {
+  client.send({ t: 'env', kind: 'aridity', value: Number(($('ar-in') as HTMLInputElement).value), abrupt: abruptOn() });
+  client.send({ t: 'env', kind: 'light', value: Number(($('li-in') as HTMLInputElement).value), abrupt: abruptOn() });
+};
+$('env-depl').onclick = () => { if (confirm('Sequestrar 40% dos nutrientes dissolvidos para o sedimento?')) client.send({ t: 'env', kind: 'nutrient_depletion', value: 0.4 }); };
+($('env-stable') as HTMLInputElement).onchange = (e) => client.send({ t: 'stable', on: (e.target as HTMLInputElement).checked });
+$('cl-reset').onclick = () => {
+  ($('cl-in') as HTMLInputElement).value = '0'; $('cl-val').textContent = '0 °C'; client.send({ t: 'climate', dT: 0, abrupt: abruptOn() });
+  ($('ar-in') as HTMLInputElement).value = '1'; $('ar-val').textContent = '100%'; ($('li-in') as HTMLInputElement).value = '1'; $('li-val').textContent = '100%';
+  client.send({ t: 'env', kind: 'aridity', value: 1, abrupt: abruptOn() }); client.send({ t: 'env', kind: 'light', value: 1, abrupt: abruptOn() });
+};
 $('pl-seed').onclick = () => client.send({ t: 'seed' });
 $('pl-mass').onclick = () => { if (confirm('Eliminar metade de toda a vida do planeta?')) client.send({ t: 'massExt', f: 0.5 }); };
 function updatePlanetPane() {
@@ -472,6 +503,8 @@ function updatePlanetPane() {
   $('geo-v').textContent = `${p.pressure.toFixed(0)} / 260`;
   ($('geo-bar') as HTMLElement).style.width = Math.min(100, (p.pressure / 260) * 100) + '%';
   $('pl-biomes').innerHTML = biomesHtml(stats);
+  const stEl = $('env-stable') as HTMLInputElement;
+  if (document.activeElement !== stEl) stEl.checked = stats.env.stable;
 }
 
 // ------------------------------------------------------------------ IA

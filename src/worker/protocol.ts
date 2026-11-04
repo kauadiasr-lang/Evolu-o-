@@ -4,6 +4,8 @@ import type { PaintMode, SimConfig } from '../core/simulation';
 import type { SimEvent } from '../core/stats';
 import type { Suggestion } from '../core/validate';
 import type { ArchetypeKind } from '../core/archetypes';
+import type { DiagnosticsReport } from '../core/diagnostics';
+import type { EnvChangeKind } from '../core/envchange';
 
 export type ToWorker =
   | { t: 'init'; cfg: Partial<SimConfig> }
@@ -13,8 +15,11 @@ export type ToWorker =
   | { t: 'layer'; layer: LayerKind; species: number }
   | { t: 'paint'; mode: PaintMode; x: number; y: number; r: number; kind?: ArchetypeKind }
   | { t: 'trail'; species: number }
+  | { t: 'env'; kind: EnvChangeKind; value: number; abrupt?: boolean }
+  | { t: 'stable'; on: boolean }
+  | { t: 'diag' }
   | { t: 'terrain' }
-  | { t: 'climate'; dT: number }
+  | { t: 'climate'; dT: number; abrupt?: boolean }
   | { t: 'massExt'; f: number }
   | { t: 'seed' }
   | { t: 'inspect'; x: number; y: number; r?: number }
@@ -96,6 +101,10 @@ export interface StatsPayload {
   eventCount: number;
   web: { nodes: WebNode[]; edges: [number, number, number][] };
   extinct: boolean;
+  /** relatório de diagnóstico evolutivo (atualizado a cada poucos segundos) */
+  diag: DiagnosticsReport | null;
+  /** ambiente atual (para os controles da interface) */
+  env: { aridity: number; light: number; stable: boolean };
 }
 
 export interface InspectInfo {
@@ -187,6 +196,7 @@ export type FromWorker =
       temp: Int8Array;
     }
   | { t: 'trail'; species: number; items: { tick: number; vis: number[] }[] }
+  | { t: 'diag'; report: DiagnosticsReport }
   | ({ t: 'stats' } & StatsPayload)
   | { t: 'inspect'; info: InspectInfo | null; plant: PlantInfo | null }
   | { t: 'cell'; info: CellInfo }

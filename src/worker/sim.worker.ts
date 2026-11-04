@@ -11,6 +11,7 @@ import { T, TR } from '../core/traits';
 import { EcoEventManager } from '../core/events';
 import type { CellInfo, FromWorker, InspectInfo, PlantInfo, ToWorker } from './protocol';
 import { buildStats, plantVis, structuresOf } from './summary';
+import { diagnosticsReport, type DiagnosticsReport } from '../core/diagnostics';
 
 const BASE_TPS = 20; // ticks por segundo a 1×
 let sim: Simulation | null = null;
@@ -115,9 +116,22 @@ function inspectPlant(x: number, y: number): PlantInfo | null {
   };
 }
 
+let diagCache: DiagnosticsReport | null = null;
+let diagAt = -1e9;
+/** o relatório de diagnóstico é mais caro que as estatísticas: recalculado no máximo a cada ~3 s */
+function currentDiag(force = false): DiagnosticsReport | null {
+  if (!sim) return null;
+  const now = performance.now();
+  if (force || now - diagAt > 3000) {
+    diagCache = diagnosticsReport(sim);
+    diagAt = now;
+  }
+  return diagCache;
+}
+
 function sendStats() {
   if (!sim) return;
-  post({ t: 'stats', ...buildStats(sim) });
+  post({ t: 'stats', ...buildStats(sim, currentDiag()) });
 }
 
 function inspect(x: number, y: number, tol = 1.2): InspectInfo | null {
@@ -194,7 +208,7 @@ ctx.onmessage = (e: MessageEvent<ToWorker>) => {
     case 'step': if (sim) { sim.run(m.n); dirty = true; sendStats(); } break;
     case 'layer': layer = m.layer; layerSpecies = m.species; dirty = true; break;
     case 'paint': if (sim) { sim.paint(m.mode, m.x, m.y, m.r, m.kind); dirty = true; sendTerrain(); } break;
-    case 'climate': if (sim) { sim.setClimate(m.dT); dirty = true; } break;
+    case 'climate': if (sim) { sim.setClimate(m.dT, !!m.abrupt); dirty = true; } break;
     case 'massExt': if (sim) { sim.massExtinction(m.f); dirty = true; } break;
     case 'seed': if (sim) { sim.seedPrimordialLife(200); dirty = true; } break;
     case 'inspect': {
@@ -204,6 +218,23 @@ ctx.onmessage = (e: MessageEvent<ToWorker>) => {
     }
     case 'trail': if (sim) trailOf(m.species); break;
     case 'terrain': sendTerrain(); break;
+    case 'diag': if (sim) post({ t: 'diag', report: currentDiag(true)! }); break;
+    case 'env':
+      if (sim) {
+        if (m.kind === 'climate') sim.setClimate(m.value, !!m.abrupt);
+        else if (m.kind === 'aridity') sim.setAridity(m.value, !!m.abrupt);
+        else if (m.kind === 'light') sim.setLight(m.value, !!m.abrupt);
+        else if (m.kind === 'nutrient_depletion') sim.depleteNutrients(m.value);
+        dirty = true;
+      }
+      break;
+    case 'stable':
+      if (sim) {
+        sim.planet.seasonAmp = m.on ? 0 : 1;
+        sim.geologyOn = !m.on;
+        sim.events.add({ tick: sim.tick, type: 'env_change', title: m.on ? 'Ambiente estabilizado' : 'Ambiente dinâmico restaurado', text: m.on ? 'Estações e erupções naturais foram desligadas: o ambiente fica relativamente constante.' : 'Estações e erupções naturais voltaram a operar.' });
+      }
+      break;
     case 'cell': if (sim) post({ t: 'cell', info: cellInfo(m.x, m.y) }); break;
     case 'save': if (sim) { const save = exportSave(sim); post({ t: 'save', reqId: m.reqId, save }); } break;
     case 'perf': frameMs = m.frameMs; statsMs = m.statsMs; budgetMs = m.budgetMs; break;

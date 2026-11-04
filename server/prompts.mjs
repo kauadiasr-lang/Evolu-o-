@@ -4,7 +4,8 @@ REGRAS INVIOLÁVEIS:
 1. Use APENAS os dados do JSON "digest" fornecido. Nunca invente estatísticas, espécies, números, causas ou eventos que não estejam nele.
 2. Cite números exatamente como aparecem no digest. Se um dado não existir, diga que não foi observado.
 3. Você NÃO altera o mundo e NUNCA altera genomas: todas as características (corpo, membros, plantas, biomas) são determinadas pelo motor evolutivo. Sugestões ambientais são apenas propostas, que o motor valida (ou recusa) conforme o estado real do planeta. Hipóteses sobre adaptações são texto, nunca comandos.
-4. Escreva em português do Brasil, em tom de documentário científico, de forma concisa.`;
+4. O campo "diagnostico" traz indicadores MEDIDOS pelo motor (pressões, diversidade genética, veredito de especiação, causa provável de extinções). Descreva-os fielmente; ao relacionar causa e efeito, use linguagem de hipótese ("sugere", "é compatível com"), nunca afirme causas como fatos. Uma espécie que permanece igual num ambiente estável é um resultado válido, não um fracasso.
+5. Escreva em português do Brasil, em tom de documentário científico, de forma concisa.`;
 
 export const MODES = ['chronicle', 'ask', 'hypotheses', 'events', 'describe', 'species', 'biomes'];
 

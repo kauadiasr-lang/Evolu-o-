@@ -29,6 +29,10 @@ export interface Species {
   cause: string; // causa registrada da extinção
   /** genoma médio ao longo do tempo (para acompanhar mudanças entre gerações) */
   trail: { tick: number; genes: number[] }[];
+  /** composição (0..1) das mortes recentes da espécie no momento da extinção — contexto, não prova */
+  causeShares?: Record<string, number>;
+  /** população no último registro antes da extinção */
+  lastPop?: number;
 }
 
 export function classifyTrophic(g: ArrayLike<number>, o = 0): Trophic {
@@ -127,6 +131,35 @@ export class SpeciesRegistry {
   }
 }
 
+/** Resultado da avaliação de divisão de uma espécie (diagnóstico: explica por que ela se dividiu ou não). */
+export type SplitVerdict = 'too_small' | 'homogeneous' | 'small_cluster' | 'no_gap' | 'no_isolation' | 'split';
+export interface SplitInfo {
+  id: number;
+  n: number;
+  verdict: SplitVerdict;
+  nSmall?: number;
+  /** separação entre os dois agrupamentos (RMS dos genes) */
+  D?: number;
+  /** dispersão interna de cada agrupamento */
+  wA?: number;
+  wB?: number;
+  /** D / max(dispersão): precisa passar de SPECIATION_GAP para haver bimodalidade */
+  ratio?: number;
+  geographic?: boolean;
+  niche?: number;
+  /** maior distância de um indivíduo ao centroide (espécies homogêneas) */
+  spread?: number;
+}
+
+export const VERDICT_TEXT: Record<SplitVerdict, string> = {
+  too_small: 'população pequena demais para avaliar divisão',
+  homogeneous: 'genoma homogêneo: ninguém se afastou do centroide o bastante',
+  small_cluster: 'o menor agrupamento é pequeno demais para formar espécie',
+  no_gap: 'sem lacuna: a variação é contínua (os agrupamentos não são distintos)',
+  no_isolation: 'agrupamentos distintos, mas sem isolamento geográfico nem ecológico',
+  split: 'divisão aceita: agrupamentos distintos e isolados',
+};
+
 export interface SpeciationEvent {
   kind: 'speciation' | 'anagenesis';
   species: Species;
@@ -152,7 +185,9 @@ export function updateSpecies(
   minDist: number = P.SPECIATION_MIN_DIST,
   gap: number = P.SPECIATION_GAP,
   /** diagnóstico opcional (testes/ferramentas): recebe as métricas de cada candidato à divisão */
-  diag?: (info: { id: number; n: number; nSmall: number; D: number; wA: number; wB: number; geographic?: boolean; niche?: number }) => void,
+  diag?: (info: SplitInfo) => void,
+  /** dry-run: só avalia e relata; não cria espécies nem reatribui indivíduos */
+  dry = false,
 ): SpeciationEvent[] {
   const S = reg.size + 1;
   const members: number[][] = Array.from({ length: S }, () => []);
@@ -173,7 +208,11 @@ export function updateSpecies(
       }
       sp.trophic = classifyTrophic(sp.centroid);
     }
-    if (sp.extinctTick >= 0 || m.length < P.MIN_SPECIES_FOR_SPLIT) continue;
+    if (sp.extinctTick >= 0) continue;
+    if (m.length < P.MIN_SPECIES_FOR_SPLIT) {
+      if (m.length > 0) diag?.({ id, n: m.length, verdict: 'too_small' });
+      continue;
+    }
 
     // 2-means: sementes = organismo mais distante do centroide e o mais distante dele
     let f1 = m[0], bd = -1;
@@ -181,7 +220,10 @@ export function updateSpecies(
       const d = geneDistance(genes, i * G_, sp.centroid, 0);
       if (d > bd) { bd = d; f1 = i; }
     }
-    if (bd < minDist * 0.5) continue; // espécie homogênea
+    if (bd < minDist * 0.5) {
+      diag?.({ id, n: m.length, verdict: 'homogeneous', spread: bd });
+      continue;
+    } // espécie homogênea
     let f2 = f1;
     bd = -1;
     for (const i of m) {
@@ -211,7 +253,10 @@ export function updateSpecies(
     if (nA === 0 || nB === 0) continue;
     const small = nA <= nB ? 0 : 1;
     const nSmall = small === 0 ? nA : nB;
-    if (nSmall < P.SPECIATION_MIN_CLUSTER) continue;
+    if (nSmall < P.SPECIATION_MIN_CLUSTER) {
+      diag?.({ id, n: m.length, verdict: 'small_cluster', nSmall });
+      continue;
+    }
     // dispersão interna e separação entre os grupos
     let wA = 0, wB = 0;
     for (let q = 0; q < m.length; q++) {
@@ -220,8 +265,11 @@ export function updateSpecies(
     }
     wA /= nA; wB /= nB;
     const D = geneDistance(cA, 0, cB, 0);
-    diag?.({ id, n: m.length, nSmall, D, wA, wB });
-    if (D < minDist || D < gap * Math.max(wA, wB)) continue;
+    const ratio = D / Math.max(1e-9, Math.max(wA, wB));
+    if (D < minDist || D < gap * Math.max(wA, wB)) {
+      diag?.({ id, n: m.length, verdict: 'no_gap', nSmall, D, wA, wB, ratio });
+      continue;
+    }
 
     // isolamento: geográfico e/ou ecológico
     let mx = 0, my = 0, rx = 0, ry = 0, sxx = 0, syy = 0;
@@ -240,7 +288,12 @@ export function updateSpecies(
     for (const k of NICHE_GENES) niche += Math.abs(cs[k] - cr[k]);
     niche /= NICHE_GENES.length;
     const ecological = niche > 0.08;
-    if (!geographic && !ecological) continue;
+    if (!geographic && !ecological) {
+      diag?.({ id, n: m.length, verdict: 'no_isolation', nSmall, D, wA, wB, ratio, geographic, niche });
+      continue;
+    }
+    diag?.({ id, n: m.length, verdict: 'split', nSmall, D, wA, wB, ratio, geographic, niche });
+    if (dry) continue;
 
     const gArr = Float32Array.from(cs);
     const child = reg.create(sp, gArr, 0, tick, rng);

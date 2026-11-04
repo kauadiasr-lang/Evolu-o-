@@ -103,6 +103,16 @@ for (const name of ['Pixel 7', 'Pixel 7 landscape', 'Galaxy S9+']) {
   await page.tap('#side-tabs [data-tab=fl]');
   await page.waitForTimeout(500);
   check(`${tag} aba Flora abre por toque`, await page.$eval('#pane-fl', (e) => e.classList.contains('on')));
+  // Etapa 4: aba de diagnóstico evolutivo e controles de pressão ambiental
+  await page.tap('#side-tabs [data-tab=evo]');
+  await page.waitForTimeout(3500);
+  check(`${tag} aba Evolução abre por toque`, await page.$eval('#pane-evo', (e) => e.classList.contains('on')));
+  check(`${tag} aba Evolução mostra pressões medidas e o veredito de especiação`, (await page.$eval('#pane-evo', (e) => e.textContent || '')).includes('Pressões atuantes') && (await page.$eval('#pane-evo', (e) => e.textContent || '')).includes('Especiação'));
+  await page.tap('#side-tabs [data-tab=pl]');
+  await page.waitForTimeout(500);
+  const envBtn = await rect(page, '#env-apply');
+  check(`${tag} controles de pressão ambiental (chuvas/luz) acessíveis ≥40px`, envBtn.vis && envBtn.h >= 40, `${envBtn.h | 0}px`);
+  check(`${tag} esgotar nutrientes e ambiente estável disponíveis`, (await rect(page, '#env-depl')).vis && (await rect(page, '#env-stable')).vis);
   await page.tap('#side .sheet-x');
   await page.waitForTimeout(300);
   await page.tap('#mnav button[data-m=tools]');

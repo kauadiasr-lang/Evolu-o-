@@ -1,7 +1,8 @@
-import { DEFAULT_MUTATION, G, GENE_COUNT, MutationParams, inherit, protocellGenome, protocellMorph } from './genome';
+import { BASE_GENES, DEFAULT_MUTATION, G, GENE_COUNT, MutationParams, inherit, protocellGenome, protocellMorph } from './genome';
 import { ARCHETYPES, ArchetypeKind, archetypeGenome } from './archetypes';
 import { Flora } from './flora';
 import { camoMatch, develop } from './phenotype';
+import { ENV_LABEL, EnvChange, validateEnvChange } from './envchange';
 import { BIOME_INFO, computeTerrain, landMean } from './biomes';
 import { OrganismPool } from './organisms';
 import { P } from './params';
@@ -22,6 +23,8 @@ export interface SimConfig {
   /** Etapa 3: continentes, flora, morfologia e biomas. false = física da Etapa 1/2, bit a bit. */
   stage3: boolean;
   maxPlants: number;
+  /** ambiente relativamente constante: sem estações e sem erupções naturais (base para experimentos) */
+  stable: boolean;
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -34,9 +37,18 @@ export const DEFAULT_CONFIG: SimConfig = {
   mutation: DEFAULT_MUTATION,
   stage3: false,
   maxPlants: 12000,
+  stable: false,
 };
 
+/** Gancho de instrumentação: observa nascimentos, mortes e exposição sem alterar o estado. */
+export interface Tracker {
+  birth(parent: number, child: number): void;
+  death(i: number, cause: DeathCause): void;
+  expose(i: number): void;
+}
+
 export type DeathCause = 'starve' | 'age' | 'predation' | 'thermal' | 'impact';
+const CAUSE_INDEX: Record<DeathCause, number> = { starve: 0, age: 1, predation: 2, thermal: 3, impact: 4 };
 export const DEATH_LABEL: Record<DeathCause, string> = {
   starve: 'Fome',
   age: 'Envelhecimento',
@@ -85,6 +97,16 @@ export class Simulation {
 
   // ---- Etapa 3
   readonly stage3: boolean;
+  /** erupções geológicas naturais ligadas (desligadas no ambiente estável) */
+  geologyOn = true;
+  /** mudanças ambientais programadas (aplicadas deterministicamente no tick indicado) */
+  schedule: EnvChange[] = [];
+  /** mortes recentes por espécie e causa (decaem): contexto para analisar extinções */
+  deathBySpecies = new Float64Array(5 * 64);
+  /** mortes recentes por causa (média móvel): mostra a pressão atuante */
+  deathsRecent: Record<DeathCause, number> = { starve: 0, age: 0, predation: 0, thermal: 0, impact: 0 };
+  /** instrumentação opcional (experimentos): não altera a simulação */
+  tracker: Tracker | null = null;
   /** fluxo de RNG exclusivo dos genes morfológicos (não perturba a física clássica) */
   mrng: Rng;
   flora: Flora | null = null;
@@ -98,6 +120,10 @@ export class Simulation {
     this.stage3 = this.cfg.stage3;
     this.mrng = new Rng((this.cfg.seed ^ 0x5bd1e995) >>> 0);
     this.planet = new Planet(this.cfg.width, this.cfg.height);
+    if (this.cfg.stable) {
+      this.planet.seasonAmp = 0;
+      this.geologyOn = false;
+    }
     this.pool = new OrganismPool(this.cfg.maxOrganisms);
     const n = this.planet.n;
     this.cellStart = new Int32Array(n + 1);
@@ -237,6 +263,7 @@ export class Simulation {
 
   step(): void {
     const { pool, planet } = this;
+    if (this.schedule.length) this.applyScheduled();
     if (this.tick % P.ENV_UPDATE_EVERY === 0) planet.updateEnvironment(this.tick);
     this.buildBuckets();
     const n = pool.used;
@@ -264,8 +291,20 @@ export class Simulation {
     for (let i = 0; i < ticks; i++) this.step();
   }
 
+  private noteDeath(speciesId: number, cause: DeathCause): void {
+    const idx = speciesId * 5 + CAUSE_INDEX[cause];
+    if (idx >= this.deathBySpecies.length) {
+      const n = new Float64Array(Math.max(this.deathBySpecies.length * 2, idx + 5));
+      n.set(this.deathBySpecies);
+      this.deathBySpecies = n;
+    }
+    this.deathBySpecies[idx]++;
+  }
+
   private kill(i: number, cause: DeathCause, toDetritus = true): void {
     const { pool, planet } = this;
+    this.noteDeath(pool.species[i], cause);
+    if (this.tracker) this.tracker.death(i, cause);
     if (toDetritus) planet.detritus[pool.cell[i]] += pool.mass[i];
     const sp = this.species.get(pool.species[i]);
     sp.count--;
@@ -278,14 +317,22 @@ export class Simulation {
   private markExtinct(sp: ReturnType<SpeciesRegistry['get']>, cause: DeathCause): void {
     sp.count = 0;
     sp.extinctTick = this.tick;
-    sp.cause = DEATH_LABEL[cause];
+    // causa PROVÁVEL: composição das mortes recentes da espécie (o último óbito sozinho engana)
+    const base = sp.id * 5;
+    const cnt = ['starve', 'age', 'predation', 'thermal', 'impact'].map((_, k) => this.deathBySpecies[base + k] ?? 0);
+    const tot = cnt.reduce((a, b) => a + b, 0);
+    const keys: DeathCause[] = ['starve', 'age', 'predation', 'thermal', 'impact'];
+    sp.causeShares = {};
+    if (tot > 0) keys.forEach((k, j) => { sp.causeShares![k] = cnt[j] / tot; });
+    const topK = tot > 0 ? keys[cnt.indexOf(Math.max(...cnt))] : cause;
+    sp.cause = DEATH_LABEL[topK];
     this.extinctionsInWindow.push(this.tick);
     if (sp.peak >= 25 || this.tick - sp.bornTick > 600) {
       this.events.add({
         tick: this.tick,
         type: 'extinction',
         title: `Extinção: ${sp.name}`,
-        text: `${sp.name} (${TROPHIC_LABEL[sp.trophic]}) desapareceu após ${this.tick - sp.bornTick} ticks de existência, com pico de ${sp.peak} indivíduos. Causa principal: ${sp.cause.toLowerCase()}.`,
+        text: `${sp.name} (${TROPHIC_LABEL[sp.trophic]}) desapareceu após ${this.tick - sp.bornTick} ticks de existência, com pico de ${sp.peak} indivíduos. Causa provável (predominante entre as mortes recentes): ${sp.cause.toLowerCase()}${tot > 0 ? ` (${keys.map((k, j) => ({ k, v: cnt[j] / tot })).filter((x) => x.v >= 0.1).sort((a, b) => b.v - a.v).map((x) => `${DEATH_LABEL[x.k].toLowerCase()} ${(x.v * 100).toFixed(0)}%`).join(', ')})` : ''}${this.planet.climateOffset !== 0 ? `; clima ${this.planet.climateOffset >= 0 ? '+' : ''}${this.planet.climateOffset.toFixed(1)} °C da linha de base` : ''}.`,
         speciesId: sp.id,
         magnitude: sp.peak,
       });
@@ -365,6 +412,8 @@ export class Simulation {
               const key = sId * 1e6 + pool.species[j];
               this.predFlow.set(key, (this.predFlow.get(key) ?? 0) + mj);
               // morte da presa (massa já redistribuída)
+              this.noteDeath(pool.species[j], 'predation');
+              if (this.tracker) this.tracker.death(j, 'predation');
               const spj = this.species.get(pool.species[j]);
               spj.count--;
               if (spj.count <= 0 && spj.extinctTick < 0) this.markExtinct(spj, 'predation');
@@ -450,6 +499,7 @@ export class Simulation {
       return;
     }
     pool.age[i] = age + 1;
+    if (this.tracker) this.tracker.expose(i);
 
     this.move(i, c, tf);
   }
@@ -504,6 +554,7 @@ export class Simulation {
     pool.energy[j] = childEnergy;
     this.births++;
     this.birthsTotal++;
+    if (this.tracker) this.tracker.birth(p, j);
     return true;
   }
 
@@ -625,6 +676,7 @@ export class Simulation {
 
   /** Erupções surgem da pressão acumulada por sedimentos — não são aleatórias. */
   private geology(): void {
+    if (!this.geologyOn) return;
     const pl = this.planet;
     if (pl.pressure > P.ERUPTION_PRESSURE && pl.vents.length > 0 && pl.reservoir > 20) {
       const v = pl.vents[this.rng.int(pl.vents.length)];
@@ -759,8 +811,9 @@ export class Simulation {
     return killed;
   }
 
-  setClimate(deltaT: number): void {
+  setClimate(deltaT: number, abrupt = false): void {
     this.planet.climateTarget = deltaT;
+    this.planet.climateRate = abrupt ? 0.5 : 0.01;
     this.events.add({
       tick: this.tick,
       type: 'climate',
@@ -768,6 +821,66 @@ export class Simulation {
       text: `O clima global está sendo ajustado para ${deltaT >= 0 ? '+' : ''}${deltaT.toFixed(0)} °C em relação à linha de base.`,
       magnitude: deltaT,
     });
+  }
+
+  /** Regime de chuvas: multiplicador-alvo (requer terra). A transição é gradual, ou abrupta se pedido. */
+  setAridity(factor: number, abrupt = false): void {
+    this.planet.aridityTarget = factor;
+    this.planet.aridityRate = abrupt ? 0.5 : 0.01;
+    this.events.add({ tick: this.tick, type: 'env_change', title: factor < 1 ? 'Aridificação' : factor > 1 ? 'Umidificação' : 'Chuvas restauradas', text: `O regime de chuvas está ${abrupt ? 'mudando abruptamente' : 'mudando gradualmente'} para ${(factor * 100).toFixed(0)}% do normal.`, magnitude: factor });
+  }
+
+  /** Luminosidade global (turbidez, poeira): multiplicador-alvo. */
+  setLight(factor: number, abrupt = false): void {
+    this.planet.lightTarget = factor;
+    this.planet.lightRate = abrupt ? 0.5 : 0.01;
+    this.events.add({ tick: this.tick, type: 'env_change', title: factor < 1 ? 'Escurecimento' : factor > 1 ? 'Mais luz' : 'Luz restaurada', text: `A luz que chega à superfície está ${abrupt ? 'mudando abruptamente' : 'mudando gradualmente'} para ${(factor * 100).toFixed(0)}% do normal.`, magnitude: factor });
+  }
+
+  /** Esgota nutrientes dissolvidos: a fração vai para o sedimento (massa conservada). */
+  depleteNutrients(fraction: number): number {
+    const pl = this.planet;
+    let moved = 0;
+    for (let i = 0; i < pl.n; i++) {
+      const m = pl.nutrient[i] * fraction;
+      pl.nutrient[i] -= m;
+      moved += m;
+    }
+    pl.reservoir += moved;
+    this.events.add({ tick: this.tick, type: 'env_change', title: 'Esgotamento de nutrientes', text: `${(fraction * 100).toFixed(0)}% dos nutrientes dissolvidos (${moved.toFixed(0)} unidades de massa) foram sequestrados para o sedimento.`, magnitude: fraction });
+    return moved;
+  }
+
+  /** Zona climática persistente (retângulo de células): soma ΔT à temperatura local, sem decair. */
+  setRegionTemp(x0: number, y0: number, x1: number, y1: number, dT: number, add = false): void {
+    const pl = this.planet;
+    for (let y = Math.max(0, y0); y <= Math.min(pl.h - 1, y1); y++) {
+      for (let x = Math.max(0, x0); x <= Math.min(pl.w - 1, x1); x++) {
+        const i = y * pl.w + x;
+        pl.regionTemp[i] = add ? pl.regionTemp[i] + dT : dT;
+      }
+    }
+    pl.regionActive = true;
+  }
+
+  /** Agenda uma mudança ambiental documentada para um tick futuro (reprodutível). */
+  scheduleChange(c: Omit<EnvChange, 'applied'>): void {
+    const err = validateEnvChange(c as EnvChange);
+    if (err) throw new Error(`mudança ambiental inválida: ${err}`);
+    this.schedule.push({ ...c, applied: false });
+    this.schedule.sort((a, b) => a.tick - b.tick);
+  }
+
+  private applyScheduled(): void {
+    for (const c of this.schedule) {
+      if (c.applied || c.tick > this.tick) continue;
+      c.applied = true;
+      if (c.kind === 'climate') this.setClimate(c.value, !!c.abrupt);
+      else if (c.kind === 'aridity') this.setAridity(c.value, !!c.abrupt);
+      else if (c.kind === 'light') this.setLight(c.value, !!c.abrupt);
+      else if (c.kind === 'nutrient_depletion') this.depleteNutrients(c.value);
+      this.events.add({ tick: this.tick, type: 'env_change', title: `Programado: ${c.label ?? ENV_LABEL[c.kind]}`, text: `Mudança ambiental documentada (${c.kind}, valor ${c.value}${c.abrupt ? ', abrupta' : ', gradual'}) aplicada no tick ${this.tick}.` });
+    }
   }
 
   /** Ferramenta de pincel do jogador. Todas as operações respeitam a conservação de massa. */
@@ -928,6 +1041,24 @@ export class Simulation {
     }
   }
   private lastBiomeEvent = -9999;
+  private lastMutTotal = 0;
+  private lastBirthTotal = 0;
+
+  /** Diversidade genética e pressão térmica (somente leitura): variância dos genes de nicho e morfológicos. */
+  private diversitySeries(gsum: Float64Array, gsq: Float64Array, pop: number, tfSum: number, lowTf: number): Record<string, number> {
+    const inv = pop > 0 ? 1 / pop : 0;
+    const v = (k: number) => Math.max(0, gsq[k] * inv - (gsum[k] * inv) ** 2);
+    const NICHE = [G.SIZE, G.PHOTO, G.OSMO, G.PRED, G.TOPT, G.MOTIL, G.DEFENSE, G.TTOL];
+    let divers = 0, varMorph = 0;
+    for (const k of NICHE) divers += v(k);
+    for (let k = BASE_GENES; k < GENE_COUNT; k++) varMorph += v(k);
+    let top = 0;
+    for (const sp of this.species.list) if (sp.extinctTick < 0 && sp.count > top) top = sp.count;
+    const dB = this.birthsTotal - this.lastBirthTotal, dM = this.mutationsTotal - this.lastMutTotal;
+    this.lastBirthTotal = this.birthsTotal;
+    this.lastMutTotal = this.mutationsTotal;
+    return { divers, varMorph, domShare: pop > 0 ? top / pop : 0, mutBirth: dB > 0 ? dM / dB : 0, tfMean: tfSum * inv, lowTf: lowTf * inv };
+  }
 
   private stage3Series(): Record<string, number> {
     if (!this.stage3 || !this.flora) return {};
@@ -948,14 +1079,25 @@ export class Simulation {
     const { pool, planet } = this;
     let pop = 0, biomass = 0, tsum = 0;
     let nPhoto = 0, nMixo = 0, nOsmo = 0, nPred = 0;
-    const gsum = new Float64Array(GENE_COUNT);
+    const gsum = new Float64Array(GENE_COUNT), gsq = new Float64Array(GENE_COUNT);
+    let tfSum = 0, lowTf = 0;
     for (let i = 0; i < pool.used; i++) {
       if (!pool.alive[i]) continue;
       pop++;
       biomass += pool.mass[i];
-      tsum += planet.temp[pool.cell[i]];
+      const cell = pool.cell[i];
+      tsum += planet.temp[cell];
       const o = i * GENE_COUNT;
-      for (let k = 0; k < GENE_COUNT; k++) gsum[k] += pool.genes[o + k];
+      for (let k = 0; k < GENE_COUNT; k++) {
+        const v = pool.genes[o + k];
+        gsum[k] += v;
+        gsq[k] += v * v;
+      }
+      // pressão térmica atuante: ajuste de cada indivíduo à temperatura local
+      const dT = (planet.temp[cell] - pool.tr[i * TR + T.TOPT]) / pool.tr[i * TR + T.TWIDTH];
+      const tf = Math.exp(-dT * dT);
+      tfSum += tf;
+      if (tf < 0.5) lowTf++;
     }
     for (const s of this.species.list) {
       if (s.extinctTick >= 0 || s.count === 0) continue;
@@ -972,11 +1114,17 @@ export class Simulation {
       temp: pop ? tsum / pop : 0, nPhoto, nMixo, nOsmo, nPred, births: this.births, deaths,
       mSize: gsum[G.SIZE] * inv, mPhoto: gsum[G.PHOTO] * inv, mOsmo: gsum[G.OSMO] * inv, mPred: gsum[G.PRED] * inv,
       mMotil: gsum[G.MOTIL] * inv, mDef: gsum[G.DEFENSE] * inv, mTopt: gsum[G.TOPT] * inv, mMeta: gsum[G.META] * inv, mTtol: gsum[G.TTOL] * inv,
+      ...this.diversitySeries(gsum, gsq, pop, tfSum, lowTf),
       ...this.stage3Series(),
     });
     if (this.stage3) this.detectStage3Events();
+    for (const k of Object.keys(this.deathsInterval) as DeathCause[]) {
+      this.deathsRecent[k] = this.deathsRecent[k] * 0.7 + this.deathsInterval[k];
+      this.deathsInterval[k] = 0;
+    }
     this.births = 0;
-    for (const k of Object.keys(this.deathsInterval) as DeathCause[]) this.deathsInterval[k] = 0;
+    // as contagens de causa por espécie decaem: representam as mortes RECENTES (~400 ticks)
+    for (let i = 0; i < this.deathBySpecies.length; i++) this.deathBySpecies[i] *= 0.93;
     // decaimento dos fluxos tróficos
     for (const [k, v] of this.predFlow) {
       const nv = v * 0.85;

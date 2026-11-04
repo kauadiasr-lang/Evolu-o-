@@ -22,6 +22,23 @@ export class Planet {
   climateOffset = 0;
   climateTarget = 0;
   season = 0;
+
+  // ---- Etapa 4: pressões ambientais controláveis. Todos os padrões são NEUTROS (física inalterada).
+  /** escala da sazonalidade (1 = normal; 0 = ambiente sem estações) */
+  seasonAmp = 1;
+  /** velocidade de relaxação para o alvo, por atualização do ambiente (0,01 = gradual; 0,5 = abrupto) */
+  climateRate = 0.01;
+  /** multiplicador de precipitação (aridez): <1 seca a terra, >1 a umedece */
+  aridity = 1;
+  aridityTarget = 1;
+  aridityRate = 0.01;
+  /** multiplicador global de luz (turbidez, poeira, cobertura de nuvens) */
+  lightFactor = 1;
+  lightTarget = 1;
+  lightRate = 0.01;
+  /** anomalia térmica persistente por célula (zonas climáticas, barreiras) — não decai */
+  regionTemp: Float32Array;
+  regionActive = false;
   /** pressão geológica: cresce com o sedimento enterrado e dispara erupções */
   pressure = 0;
 
@@ -47,6 +64,7 @@ export class Planet {
     this.baseTemp = new Float32Array(n);
     this.temp = new Float32Array(n);
     this.userTemp = new Float32Array(n);
+    this.regionTemp = new Float32Array(n);
     this.light = new Float32Array(n);
     this.lat = new Float32Array(n);
     this.nutrient = new Float64Array(n);
@@ -180,7 +198,7 @@ export class Planet {
 
   /** Clima: o aquecimento seca a terra; chuva recarrega o solo (as plantas o esvaziam). */
   private updateHydrology(): void {
-    const rf = Math.min(1.4, Math.max(0.4, 1 - 0.035 * this.climateOffset));
+    const rf = Math.min(1.4, Math.max(0.4, 1 - 0.035 * this.climateOffset)) * (this.aridity !== 1 ? this.aridity : 1);
     for (let k = 0; k < this.landCells.length; k++) {
       const i = this.landCells[k];
       const evap = 1 - 0.014 * Math.max(0, this.temp[i] - 22);
@@ -195,20 +213,25 @@ export class Planet {
     const { w, h } = this;
     this.season = Math.sin((2 * Math.PI * tick) / P.SEASON_PERIOD);
     // clima global relaxa suavemente para o alvo
-    this.climateOffset += (this.climateTarget - this.climateOffset) * 0.01;
+    this.climateOffset += (this.climateTarget - this.climateOffset) * this.climateRate;
+    if (this.aridity !== this.aridityTarget) this.aridity += (this.aridityTarget - this.aridity) * this.aridityRate;
+    if (this.lightFactor !== this.lightTarget) this.lightFactor += (this.lightTarget - this.lightFactor) * this.lightRate;
+    const sa = this.seasonAmp === 1 ? this.season : this.season * this.seasonAmp;
     for (let i = 0; i < this.n; i++) {
       const lat = this.lat[i];
       const c = Math.cos((lat * Math.PI) / 2);
       const d = this.depth[i];
       let t = 31 * Math.pow(Math.max(c, 0), 1.15) - 3;
       t -= 15 * Math.pow(d, 0.8);
-      t += 3.0 * this.season * lat; // hemisférios em oposição
+      t += 3.0 * sa * lat; // hemisférios em oposição
       if (this.stage3) t -= 14 * this.elev[i]; // gradiente térmico com a altitude
       t += this.climateOffset + this.userTemp[i];
+      if (this.regionActive) t += this.regionTemp[i];
       this.baseTemp[i] = t;
       const solar = 0.3 + 0.7 * Math.pow(Math.max(c, 0), 0.9);
-      const seas = 1 + 0.18 * this.season * lat;
+      const seas = 1 + 0.18 * sa * lat;
       this.light[i] = solar * seas * Math.exp(-d * 3.2);
+      if (this.lightFactor !== 1) this.light[i] *= this.lightFactor;
     }
     // calor hidrotermal
     for (let k = 0; k < this.vents.length; k++) {

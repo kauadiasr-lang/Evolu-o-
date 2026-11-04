@@ -5,6 +5,7 @@ import type { FromWorker, InspectInfo, CellInfo, PlantInfo, StatsPayload, ToWork
 export type FrameMsg = Extract<FromWorker, { t: 'frame' }>;
 export type TerrainEvt = Extract<FromWorker, { t: 'terrain' }>;
 export type TrailEvt = Extract<FromWorker, { t: 'trail' }>;
+export type DiagEvt = Extract<FromWorker, { t: 'diag' }>;
 
 /** Ponte entre a interface e o worker de simulação. */
 export class SimClient {
@@ -15,6 +16,7 @@ export class SimClient {
   onInspect: (i: InspectInfo | null, plant: PlantInfo | null) => void = () => {};
   onTerrain: (t: TerrainEvt) => void = () => {};
   onTrail: (t: TrailEvt) => void = () => {};
+  onDiag: (d: DiagEvt) => void = () => {};
   onCell: (c: CellInfo) => void = () => {};
   private pending = new Map<number, (v: any) => void>();
   private req = 1;
@@ -30,6 +32,7 @@ export class SimClient {
         case 'inspect': this.onInspect(m.info, m.plant); break;
         case 'terrain': this.onTerrain(m); break;
         case 'trail': this.onTrail(m); break;
+        case 'diag': this.onDiag(m); break;
         case 'cell': this.onCell(m.info); break;
         case 'save': this.pending.get(m.reqId)?.(m.save); this.pending.delete(m.reqId); break;
         case 'verdict': this.pending.get(m.reqId)?.({ ok: m.ok, reason: m.reason }); this.pending.delete(m.reqId); break;

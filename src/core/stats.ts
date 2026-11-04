@@ -18,7 +18,8 @@ export type EventType =
   | 'ai_impact'
   | 'adaptation'
   | 'biome'
-  | 'flora';
+  | 'flora'
+  | 'env_change';
 
 export interface SimEvent {
   tick: number;
@@ -67,5 +68,7 @@ export const HISTORY_KEYS = [
   'nPhoto', 'nMixo', 'nOsmo', 'nPred', 'births', 'deaths',
   'mSize', 'mPhoto', 'mOsmo', 'mPred', 'mMotil', 'mDef', 'mTopt', 'mMeta', 'mTtol',
   // Etapa 3: vegetação e biomas (fração da superfície)
+  // Etapa 4: diversidade genética, adaptação e pressão
+  'divers', 'varMorph', 'domShare', 'mutBirth', 'tfMean', 'lowTf',
   'plants', 'plantMass', 'cover', 'canopy', 'bForest', 'bGrass', 'bShrub', 'bDesert', 'bTundra', 'bSwamp', 'landTemp', 'landWater',
 ];

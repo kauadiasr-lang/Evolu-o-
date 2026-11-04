@@ -34,6 +34,15 @@ export interface Digest {
   eventos: { tick: number; tipo: string; titulo: string; texto: string }[];
   mortalidade: Record<string, number>;
   mortalidadePercentual: Record<string, number>;
+  /** Etapa 4: indicadores MEDIDOS pelo motor (pressões, diversidade, veredito de especiação, extinções) */
+  diagnostico?: {
+    pressoes: { nome: string; indicadorPercentual: number; detalhe: string }[];
+    ambienteEmCurso: string[];
+    diversidadeGenetica: { varianciaNicho: number; dispersaoDominante: number; fracaoDominantePercentual: number; mutacoesPorNascimento: number };
+    especiacao: { especie: string; individuos: number; veredito: string; explicacao: string }[];
+    extincoesRecentes: { nome: string; tick: number; causaProvavel: string; composicaoMortesRecentes: Record<string, number> }[];
+    habitat: { animaisEmTerra: number; aptosVidaTerrestrePercentual: number; coberturaVegetalPercentual: number };
+  };
   /** Etapa 3: só presentes em mundos com continentes */
   biomas?: { nome: string; percentualSuperficie: number; variacaoRecente: number | null }[];
   terra?: { temperaturaMedia: number; umidadeSoloMedia: number; coberturaVegetalPercentual: number; areaTerrestrialPercentual: number };
@@ -75,6 +84,17 @@ export function buildDigest(st: StatsPayload, sinceTick = 0): Digest {
   const evs = st.events.filter((e) => e.tick > sinceTick);
   const recentWindow = Math.max(sinceTick, st.tick - 1500);
   const stage3Part: Partial<Digest> = {};
+  if (st.diag) {
+    const d = st.diag;
+    stage3Part.diagnostico = {
+      pressoes: d.pressure.items.map((p) => ({ nome: p.label, indicadorPercentual: Math.round(p.level * 100), detalhe: p.detail })),
+      ambienteEmCurso: d.pressure.environment,
+      diversidadeGenetica: { varianciaNicho: Math.round(d.genetic.nicheVariance * 1000) / 1000, dispersaoDominante: Math.round(d.genetic.dominantSpread * 1000) / 1000, fracaoDominantePercentual: Math.round(d.genetic.dominantShare * 100), mutacoesPorNascimento: Math.round(d.genetic.mutationsPerBirth * 100) / 100 },
+      especiacao: d.speciation.slice(0, 4).map((x) => ({ especie: x.name, individuos: x.n, veredito: x.verdict, explicacao: x.explanation })),
+      extincoesRecentes: d.extinctions.slice(0, 4).map((e) => ({ nome: e.name, tick: e.extinctTick, causaProvavel: e.probableCause, composicaoMortesRecentes: Object.fromEntries(Object.entries(e.shares).map(([k, v]) => [k, Math.round(v * 100)])) })),
+      habitat: { animaisEmTerra: d.habitat.animalsOnLand, aptosVidaTerrestrePercentual: Math.round(d.habitat.landCapable * 10000) / 100, coberturaVegetalPercentual: Math.round(d.habitat.plantCoverage * 100) },
+    };
+  }
   if (st.stage3 && st.biomes.length) {
     const ser = st.history.series;
     const keyOf: Record<string, string> = { Floresta: 'bForest', Pradaria: 'bGrass', Arbustal: 'bShrub', Deserto: 'bDesert', Tundra: 'bTundra', 'Pântano': 'bSwamp' };

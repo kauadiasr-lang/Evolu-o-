@@ -303,3 +303,54 @@ export function biomesHtml(st: StatsPayload): string {
 export function drawPlantCanvas(c: HTMLCanvasElement, vis: ArrayLike<number>, t: number): void {
   drawPlantPortrait(c, vis, t);
 }
+
+
+// ---------------------------------------------------------------- Etapa 4: diagnóstico evolutivo
+const DEATH_PT: Record<string, string> = { starve: 'fome', age: 'envelhecimento', predation: 'predação', thermal: 'estresse térmico', impact: 'catástrofe' };
+
+export function evoHtml(st: StatsPayload): string {
+  const d = st.diag;
+  if (!d) return '<div class="muted">Calculando diagnóstico…</div>';
+  const g = d.genetic;
+  const struct = Object.entries(d.traits.structures).filter(([, v]) => v > 0.0005).sort((a, b) => b[1] - a[1]);
+  const spec = d.speciation.slice(0, 5);
+  return `
+  <div class="muted" style="font-size:11px;margin-bottom:6px">Indicadores medidos pelo motor. O painel descreve o que aconteceu; ele não afirma que uma pressão <i>causou</i> uma mudança.</div>
+  <h4>Pressões atuantes</h4>
+  <div class="card">
+    ${d.pressure.items.map((p) => `<div class="gene" style="grid-template-columns:150px 1fr 34px" title="${esc(p.detail)}"><span>${esc(p.label)}</span><div class="gb"><i style="width:${Math.min(100, p.level * 100)}%;background:${p.key === d.pressure.dominant ? '#e8b64a' : '#6aa8ff'}"></i></div><span>${(p.level * 100).toFixed(0)}</span></div><div class="muted" style="font-size:10.5px;margin:-1px 0 3px 0">${esc(p.detail)}</div>`).join('')}
+    ${d.pressure.environment.length ? `<div class="legendrow" style="margin-top:6px">${d.pressure.environment.map((e) => `<span class="tag">${esc(e)}</span>`).join(' ')}</div>` : '<div class="muted" style="font-size:11px">Nenhuma alteração ambiental em curso.</div>'}
+  </div>
+  <h4>Diversidade genética</h4>
+  <div class="card">
+    <div class="kv">
+      <span>Variância dos genes de nicho</span><span>${g.nicheVariance.toFixed(3)}</span>
+      <span>Variância dos genes morfológicos</span><span>${g.morphVariance.toFixed(3)}</span>
+      <span>Dispersão da espécie dominante</span><span>${g.dominantSpread.toFixed(3)}</span>
+      <span>Fração da espécie dominante</span><span>${(g.dominantShare * 100).toFixed(0)}%</span>
+      <span>Mutações por nascimento</span><span>${g.mutationsPerBirth.toFixed(2)}</span>
+    </div>
+    <canvas id="evo-spark" style="width:100%;height:90px;margin-top:6px"></canvas>
+  </div>
+  <h4>Frequência de características (% da população)</h4>
+  <div class="card">
+    ${struct.length ? struct.map(([k, v]) => `<div class="gene" style="grid-template-columns:130px 1fr 40px"><span>${esc(k)}</span><div class="gb"><i style="width:${Math.min(100, v * 100)}%;background:#6fd68a"></i></div><span>${(v * 100).toFixed(1)}</span></div>`).join('') : '<div class="muted">Nenhuma estrutura especializada expressa.</div>'}
+    <div class="legendrow" style="margin-top:6px">${Object.entries(d.traits.means).map(([k, v]) => `<span>${esc(k)} ${v.toFixed(2)}</span>`).join('')}</div>
+  </div>
+  <h4>Especiação: por que dividiu — ou não</h4>
+  <div class="card">
+    ${spec.length ? spec.map((s) => `<div style="margin-bottom:6px"><i>${esc(s.name)}</i> <span class="muted">(${fmt(s.n)} ind.)</span><div class="muted" style="font-size:11px">${esc(s.explanation)}</div></div>`).join('') : '<div class="muted">Sem espécies vivas.</div>'}
+    <div class="muted" style="font-size:10.5px">Uma espécie só se divide se houver dois agrupamentos distintos (lacuna) E isolados (geográfica ou ecologicamente). Variação contínua não especia; e permanecer igual por muito tempo é um resultado válido.</div>
+  </div>
+  <h4>Extinções recentes (causa provável)</h4>
+  <div class="card">
+    ${d.extinctions.length ? d.extinctions.slice(0, 5).map((e) => `<div style="margin-bottom:6px"><i>${esc(e.name)}</i> <span class="muted">† ${formatAge(e.extinctTick)} · pico ${fmt(e.peak)} · viveu ${fmt(e.lifespan)} ticks</span><div class="muted" style="font-size:11px">mortes recentes: ${Object.entries(e.shares).filter(([, v]) => v >= 0.05).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${DEATH_PT[k] ?? k} ${(v * 100).toFixed(0)}%`).join(', ') || 'sem registro'}</div></div>`).join('') : '<div class="muted">Nenhuma extinção registrada.</div>'}
+  </div>
+  <h4>Habitats</h4>
+  <div class="card"><div class="kv">
+    <span>Fração de terra</span><span>${(d.habitat.landFraction * 100).toFixed(0)}%</span>
+    <span>Animais em terra</span><span>${d.habitat.animalsOnLand} (${d.habitat.landCellsWithAnimals} células)</span>
+    <span>Aptos à vida terrestre</span><span>${(d.habitat.landCapable * 100).toFixed(2)}%</span>
+    <span>Plantas</span><span>${fmt(d.habitat.plants)} · cobertura ${(d.habitat.plantCoverage * 100).toFixed(0)}%</span>
+  </div></div>`;
+}

@@ -2,6 +2,7 @@ import { GENE_COUNT } from '../core/genome';
 import { develop } from '../core/phenotype';
 import { computeTerrain } from '../core/biomes';
 import { FORMS, PG, PLANT_GENES, plantForm } from '../core/flora';
+import type { DiagnosticsReport } from '../core/diagnostics';
 import type { Simulation } from '../core/simulation';
 import { VIS, visFromGenes } from '../core/snapshot';
 import type { FloraLineageInfo, FloraStats, SpeciesInfo, StatsPayload } from './protocol';
@@ -51,7 +52,7 @@ export function plantVis(g: ArrayLike<number>, maturity: number): number[] {
 }
 
 
-export function buildStats(s: Simulation): StatsPayload {
+export function buildStats(s: Simulation, diag: DiagnosticsReport | null = null): StatsPayload {
   const mass = s.massBreakdown();
   const species: SpeciesInfo[] = s.species.list.map((sp) => {
     const vis = new Uint8Array(VIS);
@@ -93,6 +94,8 @@ export function buildStats(s: Simulation): StatsPayload {
     flora: s.flora ? floraStats(s) : null,
     biomes: s.stage3 ? computeTerrain(s).areas : [],
     landFraction: s.planet.landCells.length / s.planet.n,
+    diag,
+    env: { aridity: s.planet.aridityTarget, light: s.planet.lightTarget, stable: s.planet.seasonAmp === 0 && !s.geologyOn },
   };
   return payload;
 }

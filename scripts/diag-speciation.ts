@@ -14,7 +14,7 @@ for (let t = 1; t <= 16000; t++) {
     const reg = sim.species, pool = sim.pool;
     const saved = reg.list.map((s) => ({ c: s.centroid.slice(), n: s.count }));
     const sp = new Int32Array(pool.species.slice(0, pool.used));
-    updateSpecies(reg, pool, t, new Rng(1), undefined, undefined, (d) => rows.push(`sp${d.id} n=${d.n} small=${d.nSmall} D=${d.D.toFixed(3)} wA=${d.wA.toFixed(3)} wB=${d.wB.toFixed(3)} ratio=${(d.D / Math.max(d.wA, d.wB)).toFixed(2)}`));
+    updateSpecies(reg, pool, t, new Rng(1), undefined, undefined, (d) => rows.push(`sp${d.id} ${d.verdict} n=${d.n}${d.D !== undefined ? ` D=${d.D.toFixed(3)} wA=${d.wA!.toFixed(3)} wB=${d.wB!.toFixed(3)} ratio=${d.ratio!.toFixed(2)}` : ''}`));
     // desfaz qualquer divisão aplicada pela chamada de diagnóstico
     pool.species.set(sp.subarray(0, pool.used));
     reg.list.length = saved.length;

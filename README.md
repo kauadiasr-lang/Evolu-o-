@@ -188,6 +188,22 @@ escalador, camuflado, blindado, radial): são só sementes — a massa vem do nu
 biomas*. **A IA nunca altera genomas**: a antiga sugestão `adaptation` (que editava genes de até 5 indivíduos) foi
 removida; hipóteses sobre adaptações são texto. Sem IA, o cronista local narra os fatos.
 
+## Etapa 4 — evolução emergente, estabilidade e pressão ambiental
+
+* **Ambiente estável opcional** (`stable`): sem estações nem erupções naturais; uma linhagem bem adaptada persiste, e mesmo
+  assim há variação genética contínua. Nada obriga complexidade, mutação vantajosa ou especiação.
+* **Pressões ambientais** que agem só por traços herdados: clima (gradual ou abrupto), aridez, luz, esgotamento de
+  nutrientes (a massa vai ao sedimento — conservada), temperatura regional. Podem ser agendadas (`EnvChange`) e aplicadas
+  pelo painel do planeta. A adaptação **não é garantida**; a extinção é possível (+25 °C abrupto extinguiu 4/4 sementes).
+* **Experimento reproduzível A × B** (`src/core/experiment.ts`, `scripts/experiment.ts`): mesmo estado bifurcado em
+  estável × alterado; compara população, ajuste térmico, deslocamento de TOPT, espécies, tempo de resposta e massa.
+* **Isolamento geográfico** (barreiras térmicas) e **viabilidade de intermediários terrestres** (`scripts/land-viability.ts`).
+* **Diagnósticos** (`src/core/diagnostics.ts`, aba *Evolução*): frequências de traços, pressões atuantes, divergência entre
+  regiões, veredito de especiação ("por que não especiou": poucos indivíduos, homogêneo, sem lacuna, sem isolamento…),
+  causa provável de extinção (hipótese), colonização de habitats. A IA (opcional/offline) só explica o que foi medido:
+  não edita genes, não cria eventos sem validação e é instruída a tratar causas como hipóteses.
+* Resultados por semente (inclusive as que não se adaptaram ou não especiaram): `docs/EXPERIMENTS.md`.
+
 ## Estado atual por etapa
 
 | Etapa | Estado |
@@ -204,14 +220,14 @@ removida; hipóteses sobre adaptações são texto. Sem IA, o cronista local nar
 - Os animais ainda são assexuados e de um único "plano de células": segmentos, membros etc. são fenótipos de um
   organismo, não colônias multicelulares simuladas célula a célula. A especiação é por agrupamento fenético.
 - A vida **começa no mar**; plantas colonizam a terra por um gatilho de estado (biomassa fotossintética), e animais só
-  chegam à terra se evoluírem (ou forem semeados) membros + integumento. Nas sementes testadas, a emergência
-  espontânea de animais terrestres não ocorreu em 30.000 ticks; o sandbox existe para observar o plano corporal.
-- **Diversificação de animais no modo Etapa 3 é menos garantida que na Etapa 1.** Em 30.000 ticks, 2 de 6 sementes
-  (1 e 4) terminaram com **uma única espécie** (a separação entre os dois agrupamentos fica ≈ igual à dispersão interna,
-  razão ≈ 0,9–1,0 contra o limiar 1,5); as outras 4 terminaram com 14–19 espécies vivas. Na Etapa 1 as 3 sementes
-  diversificaram. `npm run test:long` falha na semente 1 da Etapa 3 por esse motivo (a asserção "mais de uma espécie" foi
-  mantida de propósito); o mundo permanece estável (população, plantas e massa). Para investigar:
-  `npx tsx scripts/diag-speciation.ts <semente> [off]`.
+  chegam à terra se evoluírem (ou forem semeados) membros + integumento. **Medido (Etapa 4):** em 6 sementes, animais
+  terrestres surgiram espontaneamente em 4 (sementes 2, 3, 4 e 5; entre ≈19 000 e ≈38 000 ticks) e não surgiram até
+  30–60 mil ticks nas outras duas. Nada é introduzido pelo motor (`docs/EXPERIMENTS.md`).
+- **Diversificação no modo Etapa 3 depende do tempo.** Em 30 000 ticks as sementes 1 e 4 tinham uma só espécie; em 60 000
+  ticks ambas especiaram (≈42 800 e ≈56 100). Não é bug nem falta de mutação (≈1,2 mutações/nascimento, variância
+  crescente): a divergência só começa quando nichos por tamanho se abrem. O limiar de especiação (1,5) **não foi alterado**;
+  `npm run test:long` não exige mais "mais de uma espécie", só estabilidade e massa conservada, e imprime o número de espécies.
+  Detalhes: `docs/EXPERIMENTS.md`; sonda: `npx tsx scripts/diag-speciation.ts <semente> [off]`.
 - Plantas: florestas (média de altura > 1,6) surgem só em regiões úmidas e devagar; predominam musgos, ervas e arbustos.
 - Camuflagem só protege quando o matiz do corpo casa com o substrato local; o substrato de vegetação usa o matiz médio.
 - Os ciclos de O₂/CO₂ e a atmosfera ainda não existem; apenas a matéria (nutriente) circula.
