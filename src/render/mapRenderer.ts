@@ -2,6 +2,7 @@ import type { LayerKind } from '../core/layers';
 import { V, VIS } from '../core/snapshot';
 import type { FrameMsg } from '../app/simClient';
 import { dotColor, drawCreature } from './morphology';
+import { speciesCss } from './palette';
 import { BIOME_INFO } from '../core/biomes';
 import { drawPlant, PV } from './plants';
 import { PVIS } from '../core/flora';
@@ -90,6 +91,8 @@ export class MapRenderer {
   terrain: TerrainMsg | null = null;
   layerKind: LayerKind = 'ocean';
   species = 0;
+  /** 'species': cor pela identidade da espécie (id do motor); 'form': cor pelo fenótipo (matiz/fotossíntese/predação) */
+  colorMode: 'species' | 'form' = 'species';
   hoverCell: { x: number; y: number } | null = null;
   brush: { r: number; active: boolean } = { r: 3, active: false };
   pointer = { x: 0, y: 0, inside: false };
@@ -115,6 +118,8 @@ export class MapRenderer {
     this.off.height = h;
     this.img = this.offCtx.createImageData(w, h);
     this.fitted = false;
+    this.frame = null; // o quadro anterior pertence ao mundo antigo (outra grade): descartá-lo evita ler fora dos limites
+    this.terrain = null;
   }
 
   resize(): void {
@@ -181,7 +186,7 @@ export class MapRenderer {
   setTerrain(t: TerrainMsg): void {
     this.terrain = t;
     this.dirty = true;
-    if (this.frame) this.paintLayer(this.frame);
+    if (this.frame && this.frame.depth.length === this.w * this.h) this.paintLayer(this.frame);
   }
 
   /** Cor do solo + vegetação real de uma célula de terra (umidade, temperatura, cobertura, altura, matiz). */
@@ -309,28 +314,37 @@ export class MapRenderer {
     let detailed = 0;
     const vis = f.vis;
     let lastColor = '';
+    const bySpecies = this.colorMode === 'species';
+    const halo = this.quality.detailMax > 120 && this.zoom >= 3; // contorno barato: só quando há espaço e orçamento
+    ctx.strokeStyle = 'rgba(2,6,16,0.85)';
+    ctx.lineWidth = 1;
     for (const k of copies) {
       for (let i = 0; i < f.n; i++) {
         const [sx, sy] = this.worldToScreen(f.x[i] + k * this.w, f.y[i]);
         if (sx < -20 || sy < -20 || sx > rect.width + 20 || sy > rect.height + 20) continue;
         const o = i * VIS;
-        const R = (1.2 + 3.2 * (vis[o + V.SIZE] / 255)) * zf;
+        const R = Math.max(2.1, (1.2 + 3.2 * (vis[o + V.SIZE] / 255)) * zf); // tamanho mínimo legível (só desenho)
         const isSel = sel !== 0 && f.sp[i] === sel;
         const dim = sel !== 0 && !isSel;
         ctx.globalAlpha = dim ? 0.22 : 1;
         if (R >= 5.5 && detailed < this.quality.detailMax) {
           detailed++;
           drawCreature(ctx, vis, o, sx, sy, R, (f.ang[i] / 255 - 0.5) * Math.PI * 2, this.animate ? time : 0, isSel && z > 18, vis[o + V.CAMO] > 25 ? this.bgHueAt(f.x[i], f.y[i]) : undefined);
-        } else if (R >= 1.8) {
-          const c = dotColor(vis, o);
+          if (bySpecies) { // anel na cor da espécie: identidade visível mesmo com a morfologia detalhada
+            ctx.strokeStyle = speciesCss(f.sp[i]);
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.arc(sx, sy, R * 1.25 + 1, 0, 6.2832);
+            ctx.stroke();
+            lastColor = '';
+          }
+        } else {
+          const c = bySpecies ? speciesCss(f.sp[i]) : dotColor(vis, o);
           if (c !== lastColor) { ctx.fillStyle = c; lastColor = c; }
           ctx.beginPath();
           ctx.arc(sx, sy, R, 0, 6.2832);
           ctx.fill();
-        } else {
-          const c = dotColor(vis, o);
-          if (c !== lastColor) { ctx.fillStyle = c; lastColor = c; }
-          ctx.fillRect(sx - 1, sy - 1, 2, 2);
+          if (halo) ctx.stroke(); // contorno escuro: contraste com a água rasa, que tem tom parecido
         }
       }
     }

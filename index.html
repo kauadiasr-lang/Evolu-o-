@@ -34,6 +34,7 @@
     <div class="actions" id="menu">
       <button id="b-save">Salvar</button>
       <button id="b-load">Carregar</button>
+      <button id="b-restart" title="Recria o mesmo mundo (mesma semente e configuração) desde o tick 0">Reiniciar</button>
       <button id="b-new">Novo planeta</button>
       <button id="b-gfx">Gráficos</button>
     </div>
@@ -42,6 +43,20 @@
   <main>
     <section id="stage">
       <canvas id="map"></canvas>
+      <div class="overlay hud" id="hud" aria-live="off">
+        <div class="hud-main">
+          <div><label>Semente</label><b id="h-seed">—</b></div>
+          <div><label>Tempo</label><b id="h-age">—</b><small id="h-tick"></small></div>
+          <div><label>Organismos</label><b id="h-pop">—</b></div>
+          <div><label>Espécies</label><b id="h-sp">—</b></div>
+          <div><label>Biomassa</label><b id="h-bio">—</b></div>
+          <div class="hud-state"><b id="h-state" class="state">—</b><small id="h-spd"></small></div>
+        </div>
+        <div class="hud-row">
+          <div class="hud-top" id="h-top" title="Espécies mais numerosas (clique para selecionar)"></div>
+          <button id="h-color" class="hud-color" title="Alterna a cor dos organismos entre identidade da espécie e fenótipo">Cor: espécie</button>
+        </div>
+      </div>
       <div class="overlay layers" id="layers"></div>
       <div class="overlay tools" id="tools"></div>
       <div class="overlay legend" id="legend"><div class="lg-title" id="lg-title"></div><div class="lg-bar" id="lg-bar"></div><div class="lg-range"><span id="lg-min"></span><span id="lg-max"></span></div></div>
@@ -77,6 +92,7 @@
     <button class="sheet-x" data-close="bottom" aria-label="Fechar gráficos">✕</button>
     <nav class="tabs" id="bot-tabs">
       <button data-tab="tl" class="on">Linha do tempo</button>
+      <button data-tab="spop">População por espécie</button>
       <button data-tab="tree">Árvore da vida</button>
       <button data-tab="web">Teia alimentar</button>
       <button data-tab="gen">Evolução dos genes</button>
@@ -85,6 +101,7 @@
     </nav>
     <div class="bpanes">
       <div class="bpane on" id="bp-tl"><canvas id="c-pop"></canvas><canvas id="c-res"></canvas></div>
+      <div class="bpane" id="bp-spop"><canvas id="c-spop"></canvas><button id="spop-log" class="spop-log" title="Alterna entre escala linear e logarítmica (só o desenho)">Escala: linear</button></div>
       <div class="bpane" id="bp-tree"><canvas id="c-tree"></canvas></div>
       <div class="bpane" id="bp-web"><canvas id="c-web"></canvas></div>
       <div class="bpane" id="bp-gen"><canvas id="c-gen"></canvas><canvas id="c-gen2"></canvas></div>

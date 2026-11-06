@@ -218,6 +218,15 @@ Detalhes, diagnóstico, resultados (inclusive negativos) e limitações: **`docs
 * Com `ecology:false` a física é a mesma de antes, bit a bit (`physics-lock`, fingerprint de 30 000 ticks).
 * Não implementado: parasitismo (extração não letal), construção de abrigos, escolha ativa de presa, ledger energético fechado.
 
+## Etapa 6 — primeira versão visual integrada
+
+Detalhes, arquitetura e verificação: **`docs/INTERFACE.md`**.
+
+* A interface já existia; a Etapa 6 tornou o **mundo vivo visível** (cor por espécie, contorno, HUD com semente/tempo/população/espécies/biomassa),
+  acrescentou **Reiniciar**, o gráfico **População por espécie**, parâmetros de URL (`?seed=7&size=64x40&speed=5&paused=1`) e corrigiu dois erros de console.
+* Tudo vem do motor real (Web Worker). `node scripts/ui-truth.mjs` compara o navegador com o mesmo motor em Node (cada organismo desenhado);
+  `node scripts/ui-soak.mjs` roda uma sessão longa sob CPU lenta. Para abrir no celular: `npm run dev -- --host` e acesse `http://<IP>:5173`.
+
 ## Estado atual por etapa
 
 | Etapa | Estado |

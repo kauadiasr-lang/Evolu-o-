@@ -1,5 +1,5 @@
 import type { SpeciesInfo, StatsPayload } from '../worker/protocol';
-import { bodyColor, hsl } from './morphology';
+import { speciesCss } from './palette';
 
 export interface SeriesDef {
   key: string;
@@ -35,7 +35,7 @@ export function fmt(n: number): string {
   return n.toFixed(2);
 }
 
-export function drawLines(canvas: HTMLCanvasElement, ticks: number[], series: Record<string, number[]>, defs: SeriesDef[], opts: { normalize?: boolean; stacked?: boolean; events?: { tick: number; color: string }[] } = {}): void {
+export function drawLines(canvas: HTMLCanvasElement, ticks: number[], series: Record<string, number[]>, defs: SeriesDef[], opts: { normalize?: boolean; stacked?: boolean; log?: boolean; events?: { tick: number; color: string }[] } = {}): void {
   const { ctx, w, h } = setup(canvas);
   const L = 38, B = 16, Tp = 6, Rr = 8;
   const pw = w - L - Rr, ph = h - B - Tp;
@@ -47,7 +47,9 @@ export function drawLines(canvas: HTMLCanvasElement, ticks: number[], series: Re
   }
   const t0 = ticks[0], t1 = ticks[ticks.length - 1];
   const X = (t: number) => L + ((t - t0) / Math.max(1, t1 - t0)) * pw;
-  const vals = defs.map((d) => series[d.key].map((v) => v * (d.scale ?? 1)));
+  // escala logarítmica (log10(1+v)): permite ver espécies raras ao lado das dominantes; só muda o desenho
+  const tf = opts.log ? (v: number) => Math.log10(1 + Math.max(0, v)) : (v: number) => v;
+  const vals = defs.map((d) => series[d.key].map((v) => tf(v * (d.scale ?? 1))));
   let stackTop: number[][] = [];
   let max = 0;
   if (opts.stacked) {
@@ -68,7 +70,7 @@ export function drawLines(canvas: HTMLCanvasElement, ticks: number[], series: Re
     ctx.moveTo(L, y);
     ctx.lineTo(L + pw, y);
     ctx.stroke();
-    ctx.fillText(fmt(max * (1 - i / 4)), 2, y + 3);
+    ctx.fillText(fmt(opts.log ? Math.pow(10, max * (1 - i / 4)) - 1 : max * (1 - i / 4)), 2, y + 3);
   }
   for (const e of opts.events ?? []) {
     if (e.tick < t0) continue;
@@ -113,8 +115,9 @@ export function drawLines(canvas: HTMLCanvasElement, ticks: number[], series: Re
   }
 }
 
-export function speciesColor(sp: SpeciesInfo, dl = 0): string {
-  return hsl(bodyColor(sp.vis, 0), dl);
+/** cor da espécie = a mesma usada no mapa (palette.ts, só depende do id vindo do motor) */
+export function speciesColor(sp: SpeciesInfo, _dl = 0): string {
+  return speciesCss(sp.id);
 }
 
 export interface Hit {

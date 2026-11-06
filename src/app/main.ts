@@ -6,6 +6,7 @@ import { LAYER_INFO, type LayerKind } from '../core/layers';
 import type { PaintMode } from '../core/simulation';
 import { drawLines, drawTree, drawWeb, fmt, hitTest, type Hit, type SeriesDef } from '../render/charts';
 import { MapRenderer, QUALITY, rampCss, type QualityLevel } from '../render/mapRenderer';
+import { speciesCss } from '../render/palette';
 import type { CellInfo, InspectInfo, StatsPayload } from '../worker/protocol';
 import { biomesHtml, compareHtml, drawPortrait, ecoHtml, esc, evoHtml, eventsHtml, floraDetailHtml, floraListHtml, inspectHtml, plantInspectHtml, speciesDetailHtml, speciesListHtml } from './panels';
 import { drawPlantPortrait } from '../render/plants';
@@ -359,8 +360,10 @@ function tabs(navId: string, cb: (t: string) => void) {
     });
   });
 }
+let aiChecked = false;
 function setSideTab(t: string) {
   sideTab = t;
+  if (t === 'ai' && !aiChecked) { aiChecked = true; director.checkStatus().then(renderAIStatus); } // só consulta o proxy de IA quando o jogador abre a aba
   $('side-tabs').querySelectorAll('button').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.tab === t));
   document.querySelectorAll('#side .pane').forEach((p) => p.classList.toggle('on', p.id === 'pane-' + t));
   renderSide();
@@ -369,7 +372,7 @@ tabs('side-tabs', (t) => setSideTab(t));
 tabs('bot-tabs', (t) => {
   botTab = t;
   document.querySelectorAll('.bpane').forEach((p) => p.classList.toggle('on', p.id === 'bp-' + t));
-  $('bot-hint').textContent = t === 'tree' ? 'Clique numa linhagem para selecioná-la · ✕ = extinção' : t === 'web' ? 'Setas amarelas: luz · marrons: detritos · vermelhas: predação (espessura = intensidade)' : '';
+  $('bot-hint').textContent = t === 'spop' ? 'Contagens reais por espécie, amostradas a cada ≥ 25 ticks desde o início desta sessão do mundo (não vão para o arquivo salvo)' : t === 'tree' ? 'Clique numa linhagem para selecioná-la · ✕ = extinção' : t === 'web' ? 'Setas amarelas: luz · marrons: detritos · vermelhas: predação (espessura = intensidade)' : '';
   requestAnimationFrame(renderBottom);
 });
 
@@ -637,6 +640,43 @@ const geneDefs2: SeriesDef[] = [
 ];
 const evColors: Record<string, string> = { speciation: '#4dd6c4', extinction: '#ef6a6a', mass_extinction: '#ef6a6a', eruption: '#e8b64a', impact: '#e8b64a' };
 
+// ------------------------------------------------------------------ população por espécie (camada de adaptação da interface)
+// O motor guarda séries por grupo trófico, não por espécie. Esta série é amostrada AQUI, a partir de `stats.species[].count`
+// (contagens reais do motor, a cada ≥ 25 ticks), é somente leitura e é descartada ao reiniciar/carregar um mundo.
+const POP_MAX_SAMPLES = 600;
+const popSeries = { ticks: [] as number[], data: new Map<number, number[]>() };
+function resetPopSeries() { popSeries.ticks = []; popSeries.data = new Map(); }
+function samplePopSeries(st: StatsPayload) {
+  const T = popSeries.ticks;
+  if (T.length && st.tick < T[T.length - 1]) resetPopSeries(); // mundo reiniciado/carregado
+  if (T.length && st.tick - T[T.length - 1] < 25) return;
+  T.push(st.tick);
+  const n = T.length;
+  for (const sp of st.species) {
+    let a = popSeries.data.get(sp.id);
+    if (!a) { a = new Array(n - 1).fill(0); popSeries.data.set(sp.id, a); } // espécie nascida depois: zeros antes do nascimento
+    a.push(sp.count);
+  }
+  for (const [id, a] of popSeries.data) if (a.length < n) a.push(0), void id;
+  if (n > POP_MAX_SAMPLES) { // decimação: mantém a forma da curva com memória limitada
+    const keep = (_: unknown, i: number) => i % 2 === 0 || i === n - 1;
+    popSeries.ticks = T.filter(keep);
+    for (const [id, a] of popSeries.data) popSeries.data.set(id, a.filter(keep));
+  }
+}
+let popLog = false;
+$('spop-log').onclick = () => { popLog = !popLog; $('spop-log').textContent = popLog ? 'Escala: log' : 'Escala: linear'; if (stats) drawSpeciesPop(stats); };
+function drawSpeciesPop(st: StatsPayload) {
+  const alive = st.species.filter((s) => s.count > 0).sort((a, b) => b.count - a.count).slice(0, 10);
+  if (selectedSp && !alive.some((s) => s.id === selectedSp) && st.species[selectedSp - 1]) alive.push(st.species[selectedSp - 1]);
+  const defs: SeriesDef[] = alive.filter((s) => s.id !== selectedSp).map((s) => ({ key: 'sp' + s.id, label: s.name.split(' ').map((w, i) => (i ? w : w[0] + '.')).join(' '), color: speciesCss(s.id) }));
+  const sel = alive.find((s) => s.id === selectedSp);
+  if (sel) defs.push({ key: 'sp' + sel.id, label: '▶ ' + sel.name, color: speciesCss(sel.id) }); // a selecionada é desenhada por último (por cima)
+  const series: Record<string, number[]> = {};
+  for (const s of alive) series['sp' + s.id] = popSeries.data.get(s.id) ?? popSeries.ticks.map(() => 0);
+  drawLines($('c-spop') as unknown as HTMLCanvasElement, popSeries.ticks, series, defs, { log: popLog, events: st.events.filter((e) => e.type === 'extinction' || e.type === 'mass_extinction').map((e) => ({ tick: e.tick, color: '#ef6a6a' })) });
+}
+
 function renderBottom() {
   if (!stats) return;
   const st = stats;
@@ -645,7 +685,8 @@ function renderBottom() {
   if (botTab === 'tl') {
     drawLines($('c-pop') as unknown as HTMLCanvasElement, h.ticks, h.series, trophicDefs, { stacked: true, events: marks });
     drawLines($('c-res') as unknown as HTMLCanvasElement, h.ticks, h.series, resDefs, { events: marks });
-  } else if (botTab === 'tree') treeHits = drawTree($('c-tree') as unknown as HTMLCanvasElement, st, selectedSp);
+  } else if (botTab === 'spop') drawSpeciesPop(st);
+  else if (botTab === 'tree') treeHits = drawTree($('c-tree') as unknown as HTMLCanvasElement, st, selectedSp);
   else if (botTab === 'web') webHits = drawWeb($('c-web') as unknown as HTMLCanvasElement, st, selectedSp);
   else if (botTab === 'gen') {
     drawLines($('c-gen') as unknown as HTMLCanvasElement, h.ticks, h.series, geneDefs, { normalize: true });
@@ -663,12 +704,46 @@ $('c-web').addEventListener('click', (e) => {
   if (id) { selectSpecies(id, false); setSideTab('sp'); }
 });
 
+// ------------------------------------------------------------------ HUD do mundo (leitura direta de `stats`, vinda do motor)
+const hudTopEl = $('h-top');
+let hudKey = '';
+function shortAge(t: number) { return formatAge(t).replace(' milhões de anos', ' Ma').replace(' bilhões de anos', ' Ga').replace(' mil anos', ' ka').replace(' anos', ' a'); }
+function renderHud(st: StatsPayload) {
+  $('h-seed').textContent = String(seed);
+  $('h-age').textContent = shortAge(st.tick);
+  $('h-tick').textContent = `tick ${st.tick}`;
+  $('h-pop').textContent = fmt(st.pop);
+  $('h-sp').textContent = `${st.speciesAlive}`;
+  $('h-bio').textContent = fmt(st.mass.organisms);
+  const el = $('h-state');
+  if (st.extinct) { el.textContent = 'EXTINTO'; el.className = 'state dead'; }
+  else if (paused) { el.textContent = 'PAUSADO'; el.className = 'state pause'; }
+  else { el.textContent = 'EM CURSO'; el.className = 'state run'; }
+  $('h-spd').textContent = paused ? '' : speed < 1 ? '½×' : `${speed}×`;
+  const top = st.species.filter((s) => s.count > 0).sort((a, b) => b.count - a.count).slice(0, isMobile ? 4 : 6);
+  const key = top.map((s) => `${s.id}:${s.count}`).join(',') + '|' + selectedSp;
+  if (key === hudKey) return;
+  hudKey = key;
+  hudTopEl.innerHTML = top.map((s) => `<button data-sp="${s.id}" class="${s.id === selectedSp ? 'on' : ''}" title="${esc(s.name)} · ${s.count} organismos"><i style="background:${speciesCss(s.id)}"></i><em>${esc(s.name)}</em> <span class="mono">${fmt(s.count)}</span></button>`).join('');
+}
+hudTopEl.addEventListener('click', (e) => {
+  const b = (e.target as HTMLElement).closest('[data-sp]') as HTMLElement | null;
+  if (b) { selectSpecies(Number(b.dataset.sp)); setSideTab('sp'); }
+});
+const colorBtn = $('h-color');
+colorBtn.onclick = () => {
+  renderer.colorMode = renderer.colorMode === 'species' ? 'form' : 'species';
+  colorBtn.textContent = renderer.colorMode === 'species' ? 'Cor: espécie' : 'Cor: fenótipo';
+  renderer.dirty = true;
+};
+
 // ------------------------------------------------------------------ topo
 function renderState() {
   const el = $('r-state');
   if (stats?.extinct) { el.textContent = 'EXTINTO'; el.className = 'state dead'; }
   else if (paused) { el.textContent = 'PAUSADO'; el.className = 'state pause'; }
   else { el.textContent = 'EM CURSO'; el.className = 'state run'; }
+  if (stats) renderHud(stats);
 }
 
 client.onFrame = (f) => {
@@ -693,6 +768,8 @@ client.onStats = (st) => {
   $('r-sp').textContent = `${st.speciesAlive} / ${st.speciesTotal}`;
   $('r-bio').textContent = fmt(st.mass.organisms);
   renderState();
+  samplePopSeries(st);
+  renderHud(st);
   const banner = $('banner');
   banner.hidden = !st.extinct;
   if (st.extinct) banner.innerHTML = '<b>Extinção total.</b> A vida desapareceu deste planeta. <button id="bn-seed">Recomeçar a vida</button>';
@@ -740,6 +817,9 @@ $('b-load').onclick = async () => {
     d.innerHTML = `<div><b>${esc(r.name)}</b><small>${formatAge(r.tick)} · ${r.pop} organismos · ${r.species} espécies</small></div><div><button data-l>Carregar</button> <button data-d class="danger">×</button></div>`;
     d.querySelector('[data-l]')!.addEventListener('click', () => {
       client.send({ t: 'load', save: r.data });
+      const c = (r.data as any).meta?.cfg;
+      if (c) { seed = c.seed; worldCfg = { seed: c.seed, w: c.width, h: c.height, pop: c.initialPopulation, stage3: !!c.stage3, ecology: !!c.ecology }; }
+      resetPopSeries(); hudKey = '';
       m0 = 0; selectedSp = 0; inspected = null; lastAutoChron = r.tick; spRenderKey = '';
       ($('dlg-load') as HTMLDialogElement).close();
     });
@@ -754,14 +834,19 @@ $('new-ok').onclick = () => {
   const [w, h] = ($('in-size') as HTMLSelectElement).value.split('x').map(Number);
   startWorld(seed, w, h, Number(($('in-pop') as HTMLInputElement).value), ($('in-stage3') as HTMLInputElement).checked, ($('in-ecology') as HTMLInputElement).checked);
 };
+let worldCfg = { seed: 1, w: 96, h: 60, pop: 700, stage3: true, ecology: false };
 function startWorld(sd: number, w = 96, h = 60, pop = 700, stage3 = true, ecology = false) {
   seed = sd;
+  worldCfg = { seed: sd, w, h, pop, stage3, ecology };
   m0 = 0; selectedSp = 0; inspected = null; inspectedPlant = null; selectedLin = 0; compareSp = 0; compareMode = false; renderer.terrain = null; spRenderKey = ''; lastAutoChron = 0;
   renderer.species = 0; renderer.selectedOrganism = null;
-  client.send({ t: 'init', cfg: { seed: sd, width: w, height: h, initialPopulation: pop, maxOrganisms: w * h * 9, stage3, ecology, maxPlants: Math.round(w * h * 2.2) } });
+  resetPopSeries(); hudKey = '';
+  // a velocidade vai ANTES do init: se o jogador está em pausa o mundo nasce parado no tick 0 (sem corrida entre mensagens)
   client.send({ t: 'speed', speed: paused ? 0 : speed });
+  client.send({ t: 'init', cfg: { seed: sd, width: w, height: h, initialPopulation: pop, maxOrganisms: w * h * 9, stage3, ecology, maxPlants: Math.round(w * h * 2.2) } });
   setLayer(layer === 'species' ? 'ocean' : layer);
 }
+$('b-restart').onclick = () => startWorld(worldCfg.seed, worldCfg.w, worldCfg.h, worldCfg.pop, worldCfg.stage3, worldCfg.ecology);
 client.onReady = (w, h) => {
   renderer.setWorld(w, h);
   renderer.resize();
@@ -908,11 +993,20 @@ document.addEventListener('visibilitychange', () => {
 
 
 // ------------------------------------------------------------------ início
-director.checkStatus().then(renderAIStatus);
 setSpeed(1);
 updateMobile();
 setQualitySetting(qualitySetting);
 syncNav();
-startWorld(1);
+{
+  // parâmetros de URL (só interface): ?seed=7&size=64x40&pop=300&stage3=0&ecology=1&speed=5&paused=1 — úteis para reproduzir/compartilhar uma sessão
+  const q = new URLSearchParams(location.search);
+  const num = (k: string, d: number, lo: number, hi: number) => { const v = Number(q.get(k)); return q.has(k) && Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : d; };
+  const [sw, sh] = (q.get('size') ?? '96x60').split('x').map(Number);
+  const w = Number.isFinite(sw) && sw >= 16 && sw <= 160 ? sw : 96, h = Number.isFinite(sh) && sh >= 12 && sh <= 100 ? sh : 60;
+  const sp = Number(q.get('speed'));
+  if (SPEEDS.includes(sp)) setSpeed(sp);
+  if (q.get('paused') === '1') togglePause(true);
+  startWorld(num('seed', 1, 1, 2147483647), w, h, num('pop', 700, 50, 3000), q.get('stage3') !== '0', q.get('ecology') === '1');
+}
 requestAnimationFrame(frame);
-(window as any).__evolvere = { client, renderer, get stats() { return stats; }, get quality() { return qualityLevel; }, get isMobile() { return isMobile; }, get sheet() { return sheet; } };
+(window as any).__evolvere = { client, renderer, get popSeries() { return popSeries; }, get worldCfg() { return worldCfg; }, get stats() { return stats; }, get quality() { return qualityLevel; }, get isMobile() { return isMobile; }, get sheet() { return sheet; } };

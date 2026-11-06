@@ -144,6 +144,7 @@ dialog { max-width: calc(100vw - 24px); }
   .readouts > div { flex: 0 0 auto; }
   .readouts span { font-size: 12.5px; }
   .speeds, #b-step, .tps { display: none; }
+  .readouts { display: none; } /* no celular o HUD sobre o mapa mostra os mesmos dados, com rótulos */
   #speed-sel { display: block; min-height: 40px; }
   #b-menu { display: inline-block; }
   .controls { margin-left: auto; }
@@ -227,3 +228,36 @@ body.stage3 .brushr.s3only { display: flex !important; }
 .trail .arrow { color: var(--muted); font-size: 11px; flex: 0 0 auto; }
 .brushr select { max-width: 150px; }
 @media (max-width: 1600px) { .readouts > div:nth-child(2), .readouts > div:nth-child(5) { display: none; } }
+
+/* ============ Etapa 6: HUD do mundo ============ */
+/* desktop: coluna à direita, abaixo da legenda (não cobre as camadas nem as ferramentas) */
+.hud { right: 10px; top: 88px; width: 214px; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+.hud > * { pointer-events: auto; }
+.hud-main { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; background: rgba(8, 14, 28, .8); backdrop-filter: blur(4px); border: 1px solid var(--line2); border-radius: 10px; padding: 7px 10px; }
+.hud-main > div { display: flex; flex-direction: column; min-width: 0; }
+.hud-main label { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); white-space: nowrap; }
+.hud-main b { font-family: var(--mono); font-size: 13px; font-weight: 600; color: #eaf3ff; white-space: nowrap; }
+.hud-main small { font-family: var(--mono); font-size: 9.5px; color: var(--muted); }
+.hud-state b { font-size: 11px; }
+.hud-row { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
+.hud-top { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.hud-top button { display: inline-flex; align-items: center; gap: 5px; background: rgba(8, 14, 28, .82); backdrop-filter: blur(4px); border-radius: 12px; padding: 3px 8px; font-size: 11px; }
+.hud-top button i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
+.hud-top button em { font-style: italic; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hud-top button.on { background: #12594f; border-color: var(--accent); }
+.hud-color { background: rgba(8, 14, 28, .82); font-size: 11px; padding: 3px 9px; border-radius: 12px; }
+@media (max-width: 1000px) { .hud { top: 88px; } }
+@media (max-width: 820px), (max-height: 520px) and (pointer: coarse) {
+  .hud { left: 6px; right: 6px; top: 6px; width: auto; max-width: none; }
+  #app.show-layers .hud { display: none; } /* a faixa de camadas ocupa o topo */
+  .hud-main { display: flex; flex-wrap: wrap; gap: 2px 12px; padding: 5px 8px; }
+  .hud-main b { font-size: 12.5px; }
+  .hud-row { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .hud-top { flex-direction: row; flex-wrap: wrap; align-items: center; max-width: calc(100% - 110px); }
+  .hud-top button, .hud-color { min-height: 32px; }
+  #app.sheet-side .hud-row, #app.sheet-bottom .hud-row { display: none; }
+}
+@media (max-width: 420px) { .hud-main small { display: none; } .hud-main label { font-size: 8.5px; } }
+
+#bp-spop { position: absolute; } .spop-log { position: absolute; right: 14px; top: 8px; z-index: 3; font-size: 11px; padding: 3px 9px; border-radius: 12px; background: rgba(8, 14, 28, .85); min-height: 0; }
+@media (pointer: coarse) { .spop-log { min-height: 36px; } }
