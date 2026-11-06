@@ -71,7 +71,25 @@ function count(sim: Simulation, g: Group): number {
   return n;
 }
 
-function biomass(sim: Simulation, set: Set<number>): number {
+/**
+ * Espécies do grupo + as que DESCENDEM delas e surgiram DEPOIS do instante de referência (`afterId` = nº de espécies no instante 0).
+ * A especiação reatribui organismos a espécies novas durante o horizonte; contar só os ids do instante 0 faz o grupo "perder"
+ * biomassa por troca de rótulo, não por ecologia (erro comprovado na auditoria da Etapa 5: até 42% da biomassa de um grupo mudou
+ * de id em 250 ticks). Filhas que já existiam no instante 0 NÃO entram: continuam sendo outros grupos (e não são removidas
+ * quando o grupo é removido), de modo que medição e remoção usam a mesma definição.
+ */
+export function descendantSet(sim: Simulation, roots: Iterable<number>, afterId = 0): Set<number> {
+  const set = new Set(roots);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const s of sim.species.list) if (!set.has(s.id) && s.id > afterId && s.parentId && set.has(s.parentId)) { set.add(s.id); grew = true; }
+  }
+  return set;
+}
+
+export function groupBiomass(sim: Simulation, roots: Iterable<number>, afterId = 0): number {
+  const set = descendantSet(sim, roots, afterId);
   let m = 0;
   for (let i = 0; i < sim.pool.used; i++) if (sim.pool.alive[i] && set.has(sim.pool.species[i])) m += sim.pool.mass[i];
   return m;
@@ -175,7 +193,8 @@ export function removalExperiment(sim: Simulation, groups: Group[], opts: Remova
   const o = { ...DEF, ...opts } as Required<RemovalOptions>;
   const sets = groups.map((g) => new Set(g.species));
   const n0 = groups.map((g) => count(sim, g));
-  const m0 = sets.map((s) => biomass(sim, s));
+  const s0 = sim.species.size; // espécies existentes no instante 0
+  const m0 = groups.map((g) => groupBiomass(sim, g.species));
   const logR = (m: number, k: number) => Math.log((m + 1e-6) / (m0[k] + 1e-6));
 
   // controle (réplicas diferem só no deslocamento do RNG, de modo determinístico)
@@ -195,7 +214,7 @@ export function removalExperiment(sim: Simulation, groups: Group[], opts: Remova
         if (cons !== undefined && prey !== undefined && cons !== prey) flowCtl[cons][prey] += v;
       }
     }
-    groups.forEach((_, k) => ctl[k].push(logR(biomass(f, sets[k]), k)));
+    groups.forEach((g, k) => ctl[k].push(logR(groupBiomass(f, g.species, s0), k)));
   }
 
   const effect: EffectEstimate[][] = groups.map(() => groups.map(() => ({ diff: 0, se: 0, diffSink: 0, seSink: 0, sign: '?' as Sign, nB: 0 })));
@@ -208,7 +227,7 @@ export function removalExperiment(sim: Simulation, groups: Group[], opts: Remova
         for (let q = 0; q < r + 1; q++) f.rng.next();
         f.removeWhere((i) => sets[a].has(f.pool.species[i]), sink);
         f.run(o.horizon);
-        groups.forEach((_, k) => { if (k !== a) (sink ? remSink : rem)[k].push(logR(biomass(f, sets[k]), k)); });
+        groups.forEach((g, k) => { if (k !== a) (sink ? remSink : rem)[k].push(logR(groupBiomass(f, g.species, s0), k)); });
       }
     }
     for (let b = 0; b < groups.length; b++) if (b !== a) effect[a][b] = estimate(rem[b], remSink[b], ctl[b], n0[b], o);

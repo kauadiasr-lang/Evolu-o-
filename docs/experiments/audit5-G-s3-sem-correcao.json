@@ -1,0 +1,96 @@
+[
+ {
+  "w": 1,
+  "alive": 7,
+  "pairs": [
+   {
+    "a": "Protocellula primordialis#1",
+    "b": "Micnibacter gigas#3",
+    "aOnB": {
+     "diff": 0.023179072820782243,
+     "se": 0.01614359764903264,
+     "diffSink": 0.015941291624737376,
+     "seSink": 0.016376146236547283,
+     "sign": "0",
+     "nB": 161
+    },
+    "bOnA": {
+     "diff": 0.0010002187565093029,
+     "se": 0.0017734143927077923,
+     "diffSink": -0.0009617785336271832,
+     "seSink": 0.001431564113254331,
+     "sign": "0",
+     "nB": 10246
+    },
+    "flowAeatsB": 0,
+    "flowBeatsA": 0,
+    "label": "sem efeito detectável",
+    "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+   },
+   {
+    "a": "Protocellula primordialis#1",
+    "b": "Micnibacter viridis#2",
+    "aOnB": {
+     "diff": -0.04410675490403117,
+     "se": 0.03636128318687509,
+     "diffSink": -0.02129310550662944,
+     "seSink": 0.03486733915860752,
+     "sign": "0",
+     "nB": 131
+    },
+    "bOnA": {
+     "diff": 0.0019200529447818975,
+     "se": 0.003093742555752882,
+     "diffSink": -0.0010485159326391671,
+     "seSink": 0.0018261883294951717,
+     "sign": "0",
+     "nB": 10246
+    },
+    "flowAeatsB": 0,
+    "flowBeatsA": 0,
+    "label": "sem efeito detectável",
+    "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+   },
+   {
+    "a": "Micnibacter gigas#3",
+    "b": "Micnibacter viridis#2",
+    "aOnB": {
+     "diff": 0.37257041068766855,
+     "se": 0.023119670873093762,
+     "diffSink": 0.06803903222942649,
+     "seSink": 0.01895218341714618,
+     "sign": "~",
+     "nB": 131
+    },
+    "bOnA": {
+     "diff": 0.10740221191719229,
+     "se": 0.01486646772093813,
+     "diffSink": -0.01981668624829555,
+     "seSink": 0.013282756577999051,
+     "sign": "~",
+     "nB": 161
+    },
+    "flowAeatsB": 40.72927716905251,
+    "flowBeatsA": 0,
+    "label": "indeterminada",
+    "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+   }
+  ],
+  "newSp": 0,
+  "lost": [
+   0.23817394150268648,
+   0.02579443124975603,
+   0.8388425018530581
+  ]
+ },
+ {
+  "w": 2,
+  "alive": 1,
+  "pairs": []
+ },
+ {
+  "w": 3,
+  "alive": 1,
+  "pairs": []
+ }
+]

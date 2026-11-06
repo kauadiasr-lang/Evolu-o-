@@ -484,7 +484,8 @@ export class Simulation {
       }
     }
     if (this.ecology) {
-      // excesso metabólico: com energia saturada e matéria limitante, parte do corpo vaza como exsudato (vira detrito local)
+      // vazamento por energia saturada (energia > EXUDE_FROM da capacidade): parte do corpo vira detrito local.
+      // ATENÇÃO (auditoria da Etapa 5): o gatilho é só a saturação energética; NÃO se verifica se a matéria é limitante.
       const leak = exudation(mass, energy / (P.ECAP_PER_MASS * mass));
       if (leak > 0) {
         mass -= leak;

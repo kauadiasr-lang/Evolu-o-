@@ -1,5 +1,7 @@
 # Etapa 5 — Ecologia emergente e relações ecológicas naturais
 
+> **Retificações da auditoria (ver `docs/AUDITORIA_ETAPA_5.md`):** (1) a exsudação é disparada só por saturação energética, não por "matéria limitante"; (2) o teste de "barreira letal" NÃO isola os grupos (o nutriente difunde pela barreira): o efeito que ele mostrou com mais réplicas é competição indireta real por um pool comum, não um "falso positivo"; (3) a afirmação de que osmotrofia estrita é "marginal no motor" vale só para os 3 genomas testados; (4) os rótulos de `ecology.ts` descrevem efeito líquido de curto prazo e não verificam os critérios de mutualismo; (5) `removalExperiment` foi corrigido para não perder biomassa por troca de rótulo na especiação.
+
 Princípio: **nenhuma relação ecológica é programada**. O simulador só contém as condições físicas e biológicas
 (recursos limitados, custos de cada estrutura, consumo, morte, decomposição). Rótulos como "predação" ou "competição"
 existem apenas na camada de ANÁLISE, que lê resultados medidos — nunca decide o comportamento de um organismo.
@@ -37,7 +39,7 @@ sem consumir RNG, e os testes comparam `ecology:false` com o padrão.
 ### 1.4 Implementação mínima (a que foi feita)
 Dois mecanismos gerais, um instrumento de observação e um método de análise — nada específico de espécie:
 
-1. **Exsudação por excesso metabólico** (`ecomech.exudation`): quando a energia passa de 60% da capacidade, o corpo vaza
+1. **Exsudação por saturação energética** (`ecomech.exudation`; chamada "excesso metabólico" por analogia, sem verificar limitação por nutriente): quando a energia passa de 60% da capacidade, o corpo vaza
    matéria (proporcional ao excesso) para o detrito local. A matéria é conservada; o organismo paga a perda (menos
    massa). Qualquer organismo com excesso de energia exsuda — não há tipo "produtor". Efeito indireto: o detrito é recurso
    de osmótrofos e vira nutriente por decomposição.
@@ -79,7 +81,7 @@ Custos/benefícios continuam vindo da física existente (ex.: defesa custa manut
    outros (pulso de nutrientes → falso "competição"); se vai ao sedimento, parece prejudicial (falso "mutualismo"). O
    efeito só é aceito se tiver o **mesmo sinal nos dois destinos**; senão é `~` (ambíguo) e a relação fica **indeterminada**.
    Este controle foi adicionado depois de a primeira versão classificar como "competição" dois grupos separados por uma
-   barreira letal (falso positivo) — o resultado antigo está descrito em §6.2.
+   barreira letal. **Retificação:** isso foi interpretado como falso positivo, mas a auditoria mostrou que os grupos compartilham o nutriente que difunde pela barreira (competição indireta real); o duplo destino reduz, não elimina, o viés de matéria.
 5. Exige abundância mínima (15), ≥3 réplicas, |efeito| > 0,1 e > 2 erros-padrão; abaixo disso: `0` ou `?`.
 6. Rótulo: (+,+) mutualismo, (−,−) competição, (+,0) comensalismo, (0,−) amensalismo, (+,−) exploração — "predação"
    apenas se houve **consumo direto registrado**; sem consumo, "exploração sem consumo direto". É sempre um **efeito líquido
@@ -118,14 +120,14 @@ detrito | como sedimento):
 | dois fotossintéticos (nutriente/luz compartilhados) | (−,−) em ambos os limites (0,76|0,20 e 0,64|0,19) ⇒ **competição** |
 | exsudador × misotrófico, nutrientes escassos (3/célula) | ambíguo (matéria) ⇒ indeterminada |
 | exsudador × misotrófico, nutrientes abundantes (25/célula) | exsudador prejudica o misotrófico (1,52|0,63), sem efeito inverso ⇒ amensalismo (efeito líquido) |
-| dois grupos separados por barreira letal | ambíguo ⇒ indeterminada (a 1ª versão do método rotulava "competição": falso positivo corrigido) |
+| dois grupos separados por barreira letal | ambíguo ⇒ indeterminada com 3 réplicas (potência baixa); com 8 réplicas a auditoria detecta competição indireta consistente — a barreira não isola o pool de nutrientes |
 | caçador × presa (99 de massa consumida) | consumo registrado, mas efeito líquido não distinguível do ruído / ambíguo |
 | grupo com 3 organismos | indeterminada (dados insuficientes) |
 
 **Mutualismo NÃO foi observado em nenhum cenário nem em mundo natural.** O par exsudador × misotrófico foi testado em 5 contextos
 (nutrientes 3, 7 e 25 por célula; clima −10 e −16 °C na exploração): o saldo foi competição/ambíguo/amensalismo, nunca (+,+).
 Isso não é falha: a facilitação por exsudato existe (ingestão medida), mas é superada pela competição por nutriente e luz nas
-condições testadas. Também um **resultado negativo**: osmótrofos puros são energeticamente marginais neste motor (a
+condições testadas. Também um **resultado negativo**: osmótrofos puros (nos genomas testados; ver auditoria) não se sustentaram (a
 captação máxima por tick mal cobre a manutenção), então o detrito exsudado sustenta mixotrofos melhor que detritívoros estritos.
 
 ### 6.3 Mundos naturais com ecologia (`scripts/ecology.ts`, 64×40, 20 000 ticks, 4 sementes)
@@ -164,7 +166,7 @@ ajustado depois de ver estes números. Herbivoria registrada em terra foi mínim
 * Mutualismo e comensalismo não foram observados; os mecanismos permitem facilitação, mas não a produziram (§6.2).
 * Parasitismo, construção de abrigos (inquilinismo ativo), escolha ativa de presa e comportamento aprendido **não existem**.
   O abrigo é só vegetação em terra; não há estrutura aquática nem estruturas criadas por animais.
-* Sem *ledger* energético fechado: só limites superiores por evento. Osmotrofia estrita é marginal no motor.
+* Sem *ledger* energético fechado: só limites superiores por evento. Nenhum genoma de osmótrofo estrito testado (3) se sustentou; não é prova sobre todo o espaço de genomas.
 * A análise é um efeito líquido de curto prazo (≈250–300 ticks) em poucas réplicas determinísticas; o método limita (não elimina)
   o viés de matéria e depende de limiares (|efeito| > 0,1, 2 erros-padrão, abundância ≥ 15). Efeitos lentos/evolutivos não são medidos.
 * Análise em mundos naturais é cara (≈ 4 × réplicas × 2 destinos × horizonte ticks por grupo) e só considera as 3 espécies mais abundantes.

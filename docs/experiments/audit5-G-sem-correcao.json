@@ -1,0 +1,457 @@
+[
+ {
+  "w": 1,
+  "alive": 6,
+  "pairs": [
+   {
+    "a": "Protocellula viridis II#4",
+    "b": "Protocellula primordialis#1",
+    "aOnB": {
+     "diff": 0.06685969232091092,
+     "se": 0.012928759651947072,
+     "diffSink": -0.0007817528353826625,
+     "seSink": 0.00401253420602922,
+     "sign": "0",
+     "nB": 2164
+    },
+    "bOnA": {
+     "diff": 0.1456329839688838,
+     "se": 0.004918925043254499,
+     "diffSink": 0.005382091272214184,
+     "seSink": 0.004581012848299387,
+     "sign": "~",
+     "nB": 2521
+    },
+    "flowAeatsB": 1.5692608227637588,
+    "flowBeatsA": 1.0797126712735206,
+    "label": "indeterminada",
+    "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+   },
+   {
+    "a": "Protocellula viridis II#4",
+    "b": "Protocellula viridis#2",
+    "aOnB": {
+     "diff": 0.01870763182717303,
+     "se": 0.004370090428663006,
+     "diffSink": -0.026503426829748617,
+     "seSink": 0.0044587243605783465,
+     "sign": "0",
+     "nB": 1182
+    },
+    "bOnA": {
+     "diff": 0.4328027686029326,
+     "se": 0.007902008362570668,
+     "diffSink": 0.08099145193585981,
+     "seSink": 0.004015745947479535,
+     "sign": "~",
+     "nB": 2521
+    },
+    "flowAeatsB": 0,
+    "flowBeatsA": 178.66329748170327,
+    "label": "indeterminada",
+    "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+   },
+   {
+    "a": "Protocellula primordialis#1",
+    "b": "Protocellula viridis#2",
+    "aOnB": {
+     "diff": 0.010946783813656213,
+     "se": 0.005375242818273011,
+     "diffSink": -0.014942038193955811,
+     "seSink": 0.004398332155299866,
+     "sign": "0",
+     "nB": 1182
+    },
+    "bOnA": {
+     "diff": 0.17563264490446218,
+     "se": 0.009770216219878423,
+     "diffSink": 0.04390011653057067,
+     "seSink": 0.0030532669583971115,
+     "sign": "~",
+     "nB": 2164
+    },
+    "flowAeatsB": 0,
+    "flowBeatsA": 68.54688927775013,
+    "label": "indeterminada",
+    "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+   }
+  ],
+  "newSp": 0,
+  "lost": [
+   0,
+   0.8386254983392474,
+   0
+  ]
+ },
+ {
+  "w": 2,
+  "alive": 9,
+  "pairs": [
+   {
+    "a": "Protocellula viridis#2",
+    "b": "Calchozoa viridis#8",
+    "aOnB": {
+     "diff": 0.615222855462255,
+     "se": 0.022967686222648703,
+     "diffSink": 0.17915650847848563,
+     "seSink": 0.019124970166638916,
+     "sign": "-",
+     "nB": 821
+    },
+    "bOnA": {
+     "diff": -0.013059115710347999,
+     "se": 0.003968808388800264,
+     "diffSink": -0.01776237437998493,
+     "seSink": 0.0037203721531667735,
+     "sign": "0",
+     "nB": 1973
+    },
+    "flowAeatsB": 334.59166569258826,
+    "flowBeatsA": 0,
+    "label": "consumo sem benefício líquido detectável (A consome B)",
+    "evidence": "consumo direto registrado e B é prejudicado; o ganho de A não aparece no efeito da remoção de B (hipótese: ganho pequeno ou diluído)"
+   },
+   {
+    "a": "Protocellula viridis#2",
+    "b": "Halgabacter cryophilus#3",
+    "aOnB": {
+     "diff": -0.004199110882079922,
+     "se": 0.0038424270397684483,
+     "diffSink": -0.0011421854023950001,
+     "seSink": 0.005740040180493865,
+     "sign": "0",
+     "nB": 699
+    },
+    "bOnA": {
+     "diff": 0.00006446687953133579,
+     "se": 0.0033152134106739536,
+     "diffSink": 0.0006727917079025827,
+     "seSink": 0.0041689295684422326,
+     "sign": "0",
+     "nB": 1973
+    },
+    "flowAeatsB": 0,
+    "flowBeatsA": 0,
+    "label": "sem efeito detectável",
+    "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+   },
+   {
+    "a": "Calchozoa viridis#8",
+    "b": "Halgabacter cryophilus#3",
+    "aOnB": {
+     "diff": 0.002363430488150872,
+     "se": 0.004400033077881562,
+     "diffSink": -0.004493819023009601,
+     "seSink": 0.004005090684417629,
+     "sign": "0",
+     "nB": 699
+    },
+    "bOnA": {
+     "diff": 0.06743458985853806,
+     "se": 0.027548120734597364,
+     "diffSink": 0.045574641829713554,
+     "seSink": 0.02508791360881309,
+     "sign": "0",
+     "nB": 821
+    },
+    "flowAeatsB": 0,
+    "flowBeatsA": 0,
+    "label": "sem efeito detectável",
+    "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+   }
+  ],
+  "newSp": 0,
+  "lost": [
+   0.23547701763726284,
+   0,
+   0
+  ]
+ },
+ {
+  "w": 3,
+  "alive": 17,
+  "pairs": [
+   {
+    "a": "Protocellula viridis VIII#19",
+    "b": "Protocellula cryophilus IV#24",
+    "aOnB": {
+     "diff": 0.5382761277584579,
+     "se": 0.17543611035198275,
+     "diffSink": -0.1576761152379192,
+     "seSink": 0.17245700621798687,
+     "sign": "~",
+     "nB": 768
+    },
+    "bOnA": {
+     "diff": 0.05340336413608417,
+     "se": 0.0024930969815194024,
+     "diffSink": -0.00955967994453312,
+     "seSink": 0.002931704646164042,
+     "sign": "0",
+     "nB": 1435
+    },
+    "flowAeatsB": 5.035255302020478,
+    "flowBeatsA": 0.7370743072093318,
+    "label": "indeterminada",
+    "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+   },
+   {
+    "a": "Protocellula viridis VIII#19",
+    "b": "Calbaina viridis#14",
+    "aOnB": {
+     "diff": 0.0035546836086709967,
+     "se": 0.02328383786705654,
+     "diffSink": -0.03935323794562362,
+     "seSink": 0.029021297602537004,
+     "sign": "0",
+     "nB": 712
+    },
+    "bOnA": {
+     "diff": 0.05035421696281624,
+     "se": 0.0033452483142585895,
+     "diffSink": -0.002920602431742001,
+     "seSink": 0.0033268940968687586,
+     "sign": "0",
+     "nB": 1435
+    },
+    "flowAeatsB": 0,
+    "flowBeatsA": 61.303322600377605,
+    "label": "sem efeito detectável",
+    "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+   },
+   {
+    "a": "Protocellula cryophilus IV#24",
+    "b": "Calbaina viridis#14",
+    "aOnB": {
+     "diff": -0.0034990577878310485,
+     "se": 0.004987524355370901,
+     "diffSink": 0.003438792188572573,
+     "seSink": 0.00447492618478303,
+     "sign": "0",
+     "nB": 712
+    },
+    "bOnA": {
+     "diff": -0.21457035271839414,
+     "se": 0.11787663085200314,
+     "diffSink": -0.03141953732153607,
+     "seSink": 0.16832617456982155,
+     "sign": "0",
+     "nB": 768
+    },
+    "flowAeatsB": 0,
+    "flowBeatsA": 0,
+    "label": "sem efeito detectável",
+    "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+   }
+  ],
+  "newSp": 1,
+  "lost": [
+   0,
+   0.42466258774894616,
+   0.01751819522588987
+  ]
+ },
+ {
+  "w": 4,
+  "alive": 8,
+  "pairs": [
+   {
+    "a": "Protocellula cryophilus#2",
+    "b": "Protocellula primordialis#1",
+    "aOnB": {
+     "diff": 0.016995252188464784,
+     "se": 0.004401502777916243,
+     "diffSink": -0.005529812371005602,
+     "seSink": 0.0025863754847228596,
+     "sign": "0",
+     "nB": 2769
+    },
+    "bOnA": {
+     "diff": 0.016632085132191644,
+     "se": 0.002681823550063938,
+     "diffSink": 0.018492051630696428,
+     "seSink": 0.0032486202469063424,
+     "sign": "0",
+     "nB": 3084
+    },
+    "flowAeatsB": 0,
+    "flowBeatsA": 27.49368402037095,
+    "label": "sem efeito detectável",
+    "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+   },
+   {
+    "a": "Protocellula cryophilus#2",
+    "b": "Neotamonas viridis#3",
+    "aOnB": {
+     "diff": 0.35240119456574753,
+     "se": 0.004686179080728031,
+     "diffSink": 0.006773132265117252,
+     "seSink": 0.005826928186659219,
+     "sign": "~",
+     "nB": 2001
+    },
+    "bOnA": {
+     "diff": 0.09211267563403029,
+     "se": 0.004698424644198391,
+     "diffSink": 0.007302341002683156,
+     "seSink": 0.0038694680568264915,
+     "sign": "0",
+     "nB": 3084
+    },
+    "flowAeatsB": 0,
+    "flowBeatsA": 0,
+    "label": "indeterminada",
+    "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+   },
+   {
+    "a": "Protocellula primordialis#1",
+    "b": "Neotamonas viridis#3",
+    "aOnB": {
+     "diff": 0.3959755116889955,
+     "se": 0.012960435842480748,
+     "diffSink": 0.0398795356009593,
+     "seSink": 0.007563502751139394,
+     "sign": "~",
+     "nB": 2001
+    },
+    "bOnA": {
+     "diff": 0.005526218359355944,
+     "se": 0.0026858956391134043,
+     "diffSink": -0.006836167613166195,
+     "seSink": 0.0036897557077313235,
+     "sign": "0",
+     "nB": 2769
+    },
+    "flowAeatsB": 12.610869484879128,
+    "flowBeatsA": 0,
+    "label": "indeterminada",
+    "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+   }
+  ],
+  "newSp": 0,
+  "lost": [
+   0,
+   0.45799656413022727,
+   0.17131421347384906
+  ]
+ },
+ {
+  "w": 5,
+  "alive": 5,
+  "pairs": [
+   {
+    "a": "Protocellula primordialis#1",
+    "b": "Protocellula praedator#5",
+    "aOnB": {
+     "diff": -0.025926183396000904,
+     "se": 0.005293086926155023,
+     "diffSink": -0.04134174742274263,
+     "seSink": 0.004779240128970394,
+     "sign": "0",
+     "nB": 2344
+    },
+    "bOnA": {
+     "diff": 0.5156832203003087,
+     "se": 0.009854352054339632,
+     "diffSink": 0.10833349339071112,
+     "seSink": 0.008018977980016821,
+     "sign": "-",
+     "nB": 3636
+    },
+    "flowAeatsB": 0,
+    "flowBeatsA": 391.14465558749,
+    "label": "consumo sem benefício líquido detectável (B consome A)",
+    "evidence": "consumo direto registrado e A é prejudicado; o ganho de B não aparece no efeito da remoção de A (hipótese: ganho pequeno ou diluído)"
+   },
+   {
+    "a": "Protocellula primordialis#1",
+    "b": "Protocellula viridis#2",
+    "aOnB": {
+     "diff": 0.5115767368212533,
+     "se": 0.008511451956240923,
+     "diffSink": 0.024812652231947924,
+     "seSink": 0.009230570640787248,
+     "sign": "~",
+     "nB": 1242
+    },
+    "bOnA": {
+     "diff": 0.15423737423835326,
+     "se": 0.008796510086060564,
+     "diffSink": 0.00325878218715873,
+     "seSink": 0.00880592700697012,
+     "sign": "~",
+     "nB": 3636
+    },
+    "flowAeatsB": 0,
+    "flowBeatsA": 0,
+    "label": "indeterminada",
+    "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+   },
+   {
+    "a": "Protocellula praedator#5",
+    "b": "Protocellula viridis#2",
+    "aOnB": {
+     "diff": 0.564599196728897,
+     "se": 0.012440293972382001,
+     "diffSink": 0.1522212838879738,
+     "seSink": 0.006218909250017778,
+     "sign": "-",
+     "nB": 1242
+    },
+    "bOnA": {
+     "diff": -0.015369033625424577,
+     "se": 0.004851492151774099,
+     "diffSink": -0.01031178052121556,
+     "seSink": 0.005442258131245644,
+     "sign": "0",
+     "nB": 2344
+    },
+    "flowAeatsB": 140.1886606893487,
+    "flowBeatsA": 0,
+    "label": "consumo sem benefício líquido detectável (A consome B)",
+    "evidence": "consumo direto registrado e B é prejudicado; o ganho de A não aparece no efeito da remoção de B (hipótese: ganho pequeno ou diluído)"
+   }
+  ],
+  "newSp": 0,
+  "lost": [
+   0.7746365017039284,
+   0,
+   0
+  ]
+ },
+ {
+  "w": 6,
+  "alive": 2,
+  "pairs": [
+   {
+    "a": "Protocellula primordialis#1",
+    "b": "Protocellula viridis#2",
+    "aOnB": {
+     "diff": 0.3463093531147886,
+     "se": 0.008114388617555158,
+     "diffSink": 0.003936071248076893,
+     "seSink": 0.0016184309257054525,
+     "sign": "~",
+     "nB": 3857
+    },
+    "bOnA": {
+     "diff": 0.16066579784360346,
+     "se": 0.0011326245912381971,
+     "diffSink": 0.005010191045397657,
+     "seSink": 0.0008345039964802805,
+     "sign": "~",
+     "nB": 12519
+    },
+    "flowAeatsB": 0,
+    "flowBeatsA": 25.19866191763496,
+    "label": "indeterminada",
+    "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+   }
+  ],
+  "newSp": 0,
+  "lost": [
+   0.24693975279195401,
+   0
+  ]
+ }
+]

@@ -1,0 +1,1939 @@
+{
+ "R": 8,
+ "cells": [
+  {
+   "wseed": 5,
+   "nutrient": 3,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  },
+  {
+   "wseed": 11,
+   "nutrient": 3,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  },
+  {
+   "wseed": 23,
+   "nutrient": 3,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  },
+  {
+   "wseed": 37,
+   "nutrient": 3,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  },
+  {
+   "wseed": 41,
+   "nutrient": 3,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  },
+  {
+   "wseed": 5,
+   "nutrient": 7,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  },
+  {
+   "wseed": 11,
+   "nutrient": 7,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  },
+  {
+   "wseed": 23,
+   "nutrient": 7,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  },
+  {
+   "wseed": 37,
+   "nutrient": 7,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  },
+  {
+   "wseed": 41,
+   "nutrient": 7,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  },
+  {
+   "wseed": 5,
+   "nutrient": 25,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  },
+  {
+   "wseed": 11,
+   "nutrient": 25,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  },
+  {
+   "wseed": 23,
+   "nutrient": 25,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  },
+  {
+   "wseed": 37,
+   "nutrient": 25,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  },
+  {
+   "wseed": 41,
+   "nutrient": 25,
+   "effects": {
+    "bio|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|detrito": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "bio|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "surv|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    },
+    "recruit|sedimento": {
+     "XonY": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     },
+     "YonX": {
+      "d": 0,
+      "lo": 0,
+      "hi": 0,
+      "se": 0,
+      "sign": "0"
+     }
+    }
+   },
+   "N": [
+    0,
+    0
+   ],
+   "mech": {
+    "exudX": 0,
+    "detIntakeY": 0,
+    "exudY": 0,
+    "detIntakeX": 0
+   }
+  }
+ ],
+ "rows": [
+  {
+   "nut": 3,
+   "metric": "bio",
+   "dir": "XonY",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 3,
+   "metric": "bio",
+   "dir": "YonX",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 3,
+   "metric": "surv",
+   "dir": "XonY",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 3,
+   "metric": "surv",
+   "dir": "YonX",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 3,
+   "metric": "recruit",
+   "dir": "XonY",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 3,
+   "metric": "recruit",
+   "dir": "YonX",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 7,
+   "metric": "bio",
+   "dir": "XonY",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 7,
+   "metric": "bio",
+   "dir": "YonX",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 7,
+   "metric": "surv",
+   "dir": "XonY",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 7,
+   "metric": "surv",
+   "dir": "YonX",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 7,
+   "metric": "recruit",
+   "dir": "XonY",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 7,
+   "metric": "recruit",
+   "dir": "YonX",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 25,
+   "metric": "bio",
+   "dir": "XonY",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 25,
+   "metric": "bio",
+   "dir": "YonX",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 25,
+   "metric": "surv",
+   "dir": "XonY",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 25,
+   "metric": "surv",
+   "dir": "YonX",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 25,
+   "metric": "recruit",
+   "dir": "XonY",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  },
+  {
+   "nut": 25,
+   "metric": "recruit",
+   "dir": "YonX",
+   "posDet": 0,
+   "posSed": 0,
+   "negDet": 0,
+   "negSed": 0,
+   "consP": 0,
+   "consN": 0,
+   "mean": 0,
+   "sd": 0,
+   "ci": 0
+  }
+ ]
+}

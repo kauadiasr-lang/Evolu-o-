@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Rng } from '../src/core/rng';
-import { Group, PairResult, interpret, removalExperiment, topSpeciesGroups } from '../src/core/ecology';
+import { Group, PairResult, descendantSet, groupBiomass, interpret, removalExperiment, topSpeciesGroups } from '../src/core/ecology';
 import { Simulation } from '../src/core/simulation';
 import { emptyWorld, feed, genome, stateHash } from './helpers';
 
@@ -52,6 +52,23 @@ describe('emergência: a classificação reflete o que foi medido', () => {
     // (+,−) só vira predação se houve consumo direto registrado; sem consumo fica como exploração indireta
     expect(interpret('+', '-', 0, 10).label).toMatch(/predação/);
     expect(interpret('+', '-', 0, 0).label).toMatch(/sem consumo direto/);
+  });
+
+  it('correção da auditoria: uma espécie NOVA surgida de um grupo continua contando como parte do grupo; filhas que já existiam não (troca de rótulo ≠ efeito ecológico)', () => {
+    const t = toptOf({ width: 16, height: 12 });
+    const P1 = genome({ ...base(t), PHOTO: 0.9, OSMO: 0, PRED: 0, MOTIL: 0.1 }, 3);
+    const { sim, ids } = build([{ name: 'P1', g: P1, n: 30 }], {}, 50);
+    const total = groupBiomass(sim, [ids[0]]);
+    const s0 = sim.species.size; // instante de referência
+    const child = sim.species.create(sim.species.get(ids[0]), P1, 0, sim.tick, sim.rng, 'filha nova');
+    let moved = 0;
+    for (let i = 0; i < sim.pool.used && moved < 10; i++) if (sim.pool.alive[i]) { sim.pool.species[i] = child.id; moved++; }
+    expect(descendantSet(sim, [ids[0]], s0).has(child.id)).toBe(true);
+    expect(groupBiomass(sim, [ids[0]], s0)).toBeCloseTo(total, 9); // nada "some" do grupo
+    expect(groupBiomass(sim, [child.id], s0)).toBeLessThan(total); // a filha sozinha não inclui a mãe
+    // uma filha que já existia no instante de referência (id ≤ s0) NÃO é absorvida pelo grupo
+    expect(descendantSet(sim, [ids[0]], child.id).has(child.id)).toBe(false);
+    expect(groupBiomass(sim, [ids[0]], child.id)).toBeLessThan(total);
   });
 
   it('competição emerge entre duas espécies fotossintéticas que dividem nutriente e luz (nenhuma regra de competição existe)', () => {
