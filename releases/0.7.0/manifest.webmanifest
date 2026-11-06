@@ -1,0 +1,21 @@
+{
+  "id": "./",
+  "name": "GS Evolução",
+  "short_name": "GS Evolução",
+  "description": "Simulador científico de evolução e ecossistemas emergentes. A vida não segue um roteiro. Ela escreve o próprio.",
+  "lang": "pt-BR",
+  "start_url": "./?origem=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#060a14",
+  "theme_color": "#060a14",
+  "categories": ["education", "games", "science"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

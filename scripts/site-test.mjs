@@ -162,8 +162,10 @@ let gameBuild;
 }
 
 // ============================================================ versões arquivadas
-for (const v of reg.versions.filter((x) => x.id !== reg.current && x.available !== false)) {
-  const url = BASE + (v.url ?? `v/${v.id}/`);
+const archived = reg.versions.filter((x) => x.id !== reg.current && x.available !== false).map((x) => ({ id: x.id, url: x.url ?? `v/${x.id}/` }));
+if ((await fetch(BASE + `v/${reg.current}/index.html`)).ok) archived.push({ id: reg.current, url: `v/${reg.current}/` }); // cópia arquivada da versão atual
+for (const v of archived) {
+  const url = BASE + v.url;
   const { page, context, errors, failed } = await openPage(url + '?seed=3', { viewport: { width: 1280, height: 800 } }, false);
   await page.waitForSelector('canvas#map', { timeout: 15000 }).catch(() => {});
   const ok = await page.waitForFunction(() => window.__evolvere?.stats?.tick > 0 || document.querySelector('#r-pop')?.textContent !== '—', null, { timeout: 25000 }).then(() => true).catch(() => false);

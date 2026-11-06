@@ -59,7 +59,7 @@
       "channel": "experimental",
       "date": "2026-11-06",
       "stage": 7,
-      "commit": null,
+      "commit": "c815904",
       "title": "Acesso pelo celular: hospedagem, PWA e versões visualizáveis",
       "novelties": [
         "Jogo hospedado em link público (GitHub Pages), aberto direto no Chrome do Android",

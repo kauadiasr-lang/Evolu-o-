@@ -1,0 +1,11 @@
+{
+ "nome": "GS Evolução",
+ "version": "0.7.0",
+ "channel": "experimental",
+ "stage": 7,
+ "commit": "c815904",
+ "buildDate": "2026-11-06T22:22:52+00:00",
+ "title": "Acesso pelo celular: hospedagem, PWA e versões visualizáveis",
+ "build": "2bc2e0cc1534",
+ "arquivos": 10
+}
