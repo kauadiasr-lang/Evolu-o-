@@ -227,6 +227,17 @@ Detalhes, arquitetura e verificação: **`docs/INTERFACE.md`**.
 * Tudo vem do motor real (Web Worker). `node scripts/ui-truth.mjs` compara o navegador com o mesmo motor em Node (cada organismo desenhado);
   `node scripts/ui-soak.mjs` roda uma sessão longa sob CPU lenta. Para abrir no celular: `npm run dev -- --host` e acesse `http://<IP>:5173`.
 
+## Etapa 7 — acesso pelo celular, hospedagem e versões
+
+**Jogar no Android (sem computador):** abra `https://kauadiasr-lang.github.io/Evolu-o-/` no Chrome → **Abrir o jogo**; opcional: ⋮ → **Instalar app**.
+(Se o link ainda der 404: Settings → Pages → Source = **GitHub Actions**, uma vez — ver `docs/HOSPEDAGEM.md`.)
+
+* Site estático no **GitHub Pages**, publicado por `.github/workflows/pages.yml` a cada push no branch padrão, **depois** de `tsc`, `vitest`, montagem e testes do site.
+* **Versões**: `versions/versions.json` (canais estável/experimental/dev), página inicial com novidades/etapas/histórico, versões 0.1.0–0.6.0 abertas em `/v/<id>/`
+  (compilações reais dos commits), e a versão sempre visível no jogo (HUD e **⋯ → Sobre**). Ver `docs/VERSOES.md`.
+* **PWA**: instalável, tela cheia, offline; atualização **só com confirmação** do jogador. Ver `docs/PWA.md`.
+* Comandos: `npm run build:site` · `npm run serve:site` · `npm run test:site` · `npm run test:pwa-update` · `npm run release:archive -- <id> <commit>` · `npm run icons`.
+
 ## Estado atual por etapa
 
 | Etapa | Estado |

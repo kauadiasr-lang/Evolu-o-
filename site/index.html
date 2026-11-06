@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#060a14" />
+  <title>GS Evolução — versões e novidades</title>
+  <meta name="description" content="GS Evolução: simulador científico de evolução e ecossistemas emergentes. Abra a versão atual, veja as novidades e compare com versões anteriores." />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="landing.css" />
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./" aria-label="GS Evolução — início">
+    <img src="icon.svg" alt="" width="40" height="40" />
+    <span><b>GS EVOLUÇÃO</b><small>A vida não segue um roteiro. Ela escreve o próprio.</small></span>
+  </a>
+  <nav aria-label="Seções">
+    <a href="#novidades">Novidades</a><a href="#etapas">Etapas</a><a href="#historico">Versões</a><a href="#problemas">Problemas</a><a href="#android">Android</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="h-atual">
+    <p class="eyebrow">Versão atual</p>
+    <h1 id="h-atual"><span id="cur-name">GS Evolução</span> <span id="cur-ver" class="ver">…</span> <span id="cur-ch" class="ch"></span></h1>
+    <p id="cur-title" class="lead">Carregando informações da versão…</p>
+    <div class="cta">
+      <a id="open-game" class="btn primary big" href="jogo/">▶ Abrir o jogo</a>
+      <a class="btn big" href="#android">Instalar no Android</a>
+    </div>
+    <p id="cur-warn" class="callout" hidden></p>
+    <dl class="meta" id="cur-meta"></dl>
+    <details class="how">
+      <summary>Como saber qual versão estou usando?</summary>
+      <p>Dentro do jogo a versão aparece no canto do mapa (HUD) e em <b>⋯ → Sobre / versão</b>, com canal, commit e data da compilação.
+      Esta página mostra, acima, a versão que o botão <b>Abrir o jogo</b> abre agora e de qual commit ela foi publicada.</p>
+    </details>
+  </section>
+
+  <section id="novidades" aria-labelledby="h-nov">
+    <h2 id="h-nov">Novidades desta versão</h2>
+    <div id="cur-news" class="grid"></div>
+  </section>
+
+  <section id="etapas" aria-labelledby="h-et">
+    <h2 id="h-et">Etapas concluídas</h2>
+    <ol id="stages" class="stages"></ol>
+  </section>
+
+  <section id="historico" aria-labelledby="h-hist">
+    <h2 id="h-hist">Histórico de versões</h2>
+    <p class="muted">Cada versão antiga é uma compilação real do commit correspondente — o mesmo motor de simulação daquela época — para você comparar. <span class="legend"><i class="ch stable">estável</i> validada, sem ressalvas abertas · <i class="ch experimental">experimental</i> funciona, com ressalvas · <i class="ch dev">desenvolvimento</i> pode quebrar</span></p>
+    <div id="versions" class="versions"></div>
+  </section>
+
+  <section id="problemas" aria-labelledby="h-prob">
+    <h2 id="h-prob">Problemas conhecidos</h2>
+    <div id="issues"></div>
+  </section>
+
+  <section id="android" aria-labelledby="h-and">
+    <h2 id="h-and">Usar no Android</h2>
+    <ol class="steps">
+      <li><b>Abra o link no Chrome.</b> Não precisa instalar nada: toque em <b>Abrir o jogo</b>.</li>
+      <li><b>Instalar como app (opcional):</b> no Chrome toque em <b>⋮ → Instalar app</b> (ou <b>Adicionar à tela inicial</b>). O ícone "GS Evolução" aparece na tela inicial e abre em tela cheia.</li>
+      <li><b>Funciona sem internet</b> depois da primeira visita completa (o jogo fica guardado no aparelho).</li>
+      <li><b>Atualizações:</b> quando houver versão nova o jogo avisa e só atualiza se você confirmar — a simulação em andamento não é interrompida sozinha. Dá para salvar o mundo antes.</li>
+    </ol>
+    <p class="muted">Dica: abra o jogo com parâmetros, por exemplo <code>jogo/?seed=7&amp;size=64x40&amp;speed=5</code> (semente, tamanho, velocidade; <code>paused=1</code> começa parado).</p>
+  </section>
+</main>
+
+<footer>
+  <p id="foot-build" class="muted">GS Evolução</p>
+  <p class="muted"><a href="https://github.com/kauadiasr-lang/Evolu-o-">Código-fonte no GitHub</a> · <a href="https://github.com/kauadiasr-lang/Evolu-o-/tree/claude/evolvere-evolution-simulator-c9qt4h/docs">Documentação</a></p>
+</footer>
+<noscript><p class="callout" style="margin:16px">Esta página lista as versões com JavaScript. Você pode abrir o jogo diretamente: <a href="jogo/">jogo/</a>.</p></noscript>
+<script src="landing.js"></script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="theme-color" content="#060a14" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>EVOLVERE — Simulador de Evolução</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%230b1a2e' stroke='%234dd6c4' stroke-width='2'/%3E%3Ccircle cx='12' cy='14' r='4' fill='%234dd6c4'/%3E%3Ccircle cx='20' cy='19' r='3' fill='%23e8b64a'/%3E%3C/svg%3E" />
+  <script type="module" crossorigin src="./assets/index-DEwRFcS5.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BBkDHdQM.css">
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="#0b1a2e" stroke="#4dd6c4" stroke-width="1.6"/><circle cx="12" cy="14" r="4" fill="#4dd6c4"/><circle cx="20.5" cy="19.5" r="3" fill="#e8b64a"/><circle cx="19" cy="10" r="1.6" fill="#9ad0ff"/></svg>
+      <div><b>EVOLVERE</b><small>A vida não segue um roteiro. Ela escreve o próprio.</small></div>
+    </div>
+    <div class="readouts">
+      <div><label>Idade do planeta</label><span id="r-age">—</span></div>
+      <div><label>Geração máx.</label><span id="r-gen">—</span></div>
+      <div><label>População</label><span id="r-pop">—</span></div>
+      <div><label>Espécies vivas</label><span id="r-sp">—</span></div>
+      <div><label>Biomassa</label><span id="r-bio">—</span></div>
+      <div><label>Estado</label><span id="r-state" class="state">—</span></div>
+    </div>
+    <div class="controls">
+      <button id="b-play" title="Pausar / continuar (Espaço)" class="icon">⏸</button>
+      <button id="b-step" title="Avançar 25 ticks (com pausa)" class="icon">⏭</button>
+      <div class="speeds" id="speeds"></div>
+      <select id="speed-sel" aria-label="Velocidade"></select>
+      <span class="tps" id="r-tps">0 t/s</span>
+    </div>
+    <button id="b-menu" class="icon" aria-label="Menu" aria-expanded="false">⋯</button>
+    <div class="actions" id="menu">
+      <button id="b-save">Salvar</button>
+      <button id="b-load">Carregar</button>
+      <button id="b-new">Novo planeta</button>
+      <button id="b-gfx">Gráficos</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="stage">
+      <canvas id="map"></canvas>
+      <div class="overlay layers" id="layers"></div>
+      <div class="overlay tools" id="tools"></div>
+      <div class="overlay legend" id="legend"><div class="lg-title" id="lg-title"></div><div class="lg-bar" id="lg-bar"></div><div class="lg-range"><span id="lg-min"></span><span id="lg-max"></span></div></div>
+      <div class="overlay zoomctl"><button id="z-in" title="Aproximar">+</button><button id="z-out" title="Afastar">−</button><button id="z-fit" title="Ajustar à tela">⤢</button></div>
+      <div class="overlay tip" id="tip" hidden></div>
+      <div class="overlay banner" id="banner" hidden></div>
+    </section>
+
+    <aside id="side">
+      <button class="sheet-x" data-close="side" aria-label="Fechar painel">✕</button>
+      <nav class="tabs" id="side-tabs">
+        <button data-tab="sp" class="on">Espécies</button>
+        <button data-tab="fl" id="tab-fl">Flora</button>
+        <button data-tab="eco">Ecossistema</button>
+        <button data-tab="ev">Eventos</button>
+        <button data-tab="pl">Planeta</button>
+        <button data-tab="ai">IA</button>
+      </nav>
+      <div class="panes">
+        <div class="pane on" id="pane-sp"></div>
+        <div class="pane" id="pane-fl"></div>
+        <div class="pane" id="pane-eco"></div>
+        <div class="pane" id="pane-ev"></div>
+        <div class="pane" id="pane-pl"></div>
+        <div class="pane" id="pane-ai"></div>
+      </div>
+    </aside>
+  </main>
+
+  <footer id="bottom">
+    <button class="sheet-x" data-close="bottom" aria-label="Fechar gráficos">✕</button>
+    <nav class="tabs" id="bot-tabs">
+      <button data-tab="tl" class="on">Linha do tempo</button>
+      <button data-tab="tree">Árvore da vida</button>
+      <button data-tab="web">Teia alimentar</button>
+      <button data-tab="gen">Evolução dos genes</button>
+      <span class="grow"></span>
+      <span class="hint" id="bot-hint"></span>
+    </nav>
+    <div class="bpanes">
+      <div class="bpane on" id="bp-tl"><canvas id="c-pop"></canvas><canvas id="c-res"></canvas></div>
+      <div class="bpane" id="bp-tree"><canvas id="c-tree"></canvas></div>
+      <div class="bpane" id="bp-web"><canvas id="c-web"></canvas></div>
+      <div class="bpane" id="bp-gen"><canvas id="c-gen"></canvas><canvas id="c-gen2"></canvas></div>
+    </div>
+  </footer>
+  <nav id="mnav" aria-label="Navegação">
+    <button data-m="map" class="on"><i>🗺</i><span>Mapa</span></button>
+    <button data-m="layers"><i>◧</i><span>Camadas</span></button>
+    <button data-m="tools"><i>✋</i><span>Ações</span></button>
+    <button data-m="side"><i>🧬</i><span>Dados</span></button>
+    <button data-m="bottom"><i>📈</i><span>Gráficos</span></button>
+  </nav>
+</div>
+
+<dialog id="dlg-gfx">
+  <form method="dialog">
+    <h3>Desempenho gráfico</h3>
+    <p class="muted">A simulação (física) é idêntica em qualquer qualidade; muda apenas o desenho e a frequência das atualizações.</p>
+    <label>Qualidade
+      <select id="in-quality"><option value="auto">Automática</option><option value="high">Alta</option><option value="medium">Média</option><option value="low">Baixa (celulares fracos)</option></select>
+    </label>
+    <label class="chk"><input type="checkbox" id="in-bgpause" /> Pausar quando o app ficar em segundo plano</label>
+    <div class="muted" id="gfx-info"></div>
+    <div class="row"><button value="ok" class="primary">Fechar</button></div>
+  </form>
+</dialog>
+<dialog id="dlg-new">
+  <form method="dialog">
+    <h3>Novo planeta</h3>
+    <p class="muted">Cada semente gera um relevo oceânico e uma história evolutiva diferentes.</p>
+    <label>Semente <input id="in-seed" type="number" value="1" min="1" /></label>
+    <label>Tamanho do mundo
+      <select id="in-size"><option value="64x40">Pequeno (64×40)</option><option value="96x60" selected>Médio (96×60)</option><option value="128x80">Grande (128×80)</option></select>
+    </label>
+    <label class="chk"><input id="in-stage3" type="checkbox" checked /> Continentes, flora, morfologia e biomas (Etapa 3)</label>
+    <label>Protocélulas iniciais <input id="in-pop" type="number" value="700" min="50" max="3000" /></label>
+    <div class="row"><button value="cancel">Cancelar</button><button value="ok" class="primary" id="new-ok">Criar</button></div>
+  </form>
+</dialog>
+<dialog id="dlg-load">
+  <form method="dialog"><h3>Planetas salvos</h3><div id="save-list" class="save-list"></div><div class="row"><button value="close">Fechar</button></div></form>
+</dialog>
+<script src="./gs-badge.js"></script>
+</body>
+</html>

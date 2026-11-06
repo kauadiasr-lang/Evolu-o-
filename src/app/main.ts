@@ -15,6 +15,8 @@ import { BIOME_INFO } from '../core/biomes';
 import type { FloraLineageInfo, PlantInfo } from '../worker/protocol';
 import { SimClient } from './simClient';
 import { storage } from './storage';
+import { GS, channelLabel } from './version';
+import { applyUpdate, buildInfoLine, cacheNames, initPwa, promptInstall, pwaState } from './pwa';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -23,6 +25,8 @@ const client = new SimClient();
 const canvas = $('map') as unknown as HTMLCanvasElement;
 const renderer = new MapRenderer(canvas);
 const director = new AIDirector();
+// endereço relativo à página (não absoluto): em hospedagem com subcaminho não aponta para a raiz do domínio; em dev vira /api/ai
+director.endpoint = new URL('api/ai', document.baseURI).pathname;
 
 let stats: StatsPayload | null = null;
 let m0 = 0; // massa total inicial (para exibir a conservação)
@@ -991,6 +995,60 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+
+// ------------------------------------------------------------------ versão, instalação e atualização (Etapa 7)
+// Só metadados de build e do navegador: nada aqui toca o motor. A atualização exige confirmação do jogador.
+const CHANNEL_NOTE: Record<string, string> = {
+  stable: 'Estável: validada pelos testes da etapa, sem ressalvas científicas abertas que afetem o uso.',
+  experimental: 'Experimental: funciona e foi testada, mas tem ressalvas documentadas na página de versões. Não é uma versão estável.',
+  dev: 'Desenvolvimento: build intermediária; pode quebrar. Não é uma versão estável.',
+};
+const homeUrl = new URL('../', document.baseURI).href; // a página inicial de versões fica um nível acima da pasta do jogo
+$('ab-home').setAttribute('href', homeUrl);
+$('h-ver').innerHTML = `${esc(GS.nome)} <b>v${esc(GS.version)}</b> <span class="ch ${esc(GS.channel)}">${esc(channelLabel(GS.channel))}</span>`;
+async function openAbout() {
+  const caches_ = await cacheNames();
+  const rows: [string, string][] = [
+    ['Versão', `v${GS.version} — ${GS.title}`],
+    ['Canal', channelLabel(GS.channel)],
+    ['Etapa', GS.stage ? String(GS.stage) : '—'],
+    ['Commit', GS.commit],
+    ['Compilada em', GS.buildDate ? new Date(GS.buildDate).toLocaleString('pt-BR') : '—'],
+    ['Modo', pwaState.standalone ? 'app instalado (tela cheia)' : 'navegador'],
+    ['Offline', pwaState.controlled ? 'pronto (service worker ativo)' : pwaState.supported ? 'ainda não (abra de novo após a primeira visita)' : 'não suportado'],
+    ['Cache', caches_.length ? `${caches_.length} versão(ões) em cache` : '—'],
+    ['Atualização', pwaState.updateWaiting ? 'nova versão em espera' : 'nenhuma pendente'],
+  ];
+  $('ab-title').textContent = GS.nome;
+  $('ab-sub').textContent = 'A vida não segue um roteiro. Ela escreve o próprio.';
+  $('ab-kv').innerHTML = `<div class="kv">${rows.map(([k, v]) => `<span>${esc(k)}</span><span>${esc(v)}</span>`).join('')}</div>`;
+  $('ab-note').textContent = CHANNEL_NOTE[GS.channel] ?? '';
+  ($('dlg-about') as HTMLDialogElement).showModal();
+}
+$('h-ver').onclick = openAbout;
+$('b-about').onclick = openAbout;
+$('ab-copy').onclick = async () => { try { await navigator.clipboard.writeText(buildInfoLine()); $('ab-copy').textContent = 'Copiado ✓'; } catch { $('ab-copy').textContent = buildInfoLine(); } };
+const updateBar = $('update-bar');
+function showUpdate(info: { version: string; build: string }) {
+  $('up-title').textContent = info.version === '?' ? 'Nova versão disponível' : `Nova versão disponível: v${info.version}`;
+  $('up-text').textContent = ` Você está na v${GS.version}. Sua simulação continua rodando nesta versão até você atualizar; ao atualizar, o jogo recarrega (o mundo atual é perdido se não for salvo).`;
+  updateBar.hidden = false;
+}
+$('up-later').onclick = () => { updateBar.hidden = true; };
+$('up-now').onclick = () => applyUpdate();
+$('up-save').onclick = async () => {
+  ($('up-save') as HTMLButtonElement).disabled = true;
+  try { await saveNow(`antes da atualização — v${GS.version}`); } catch { /* segue mesmo assim só se o jogador confirmar de novo */ ($('up-save') as HTMLButtonElement).disabled = false; $('up-text').textContent = ' Não foi possível salvar o mundo. Toque em "Atualizar" se quiser atualizar mesmo assim.'; return; }
+  applyUpdate();
+};
+const installBtn = $('b-install') as HTMLButtonElement;
+installBtn.onclick = async () => { const r = await promptInstall(); if (r !== 'unavailable') installBtn.hidden = true; };
+initPwa({
+  onUpdateReady: showUpdate,
+  onInstallAvailable: () => { installBtn.hidden = false; },
+  onInstalled: () => { installBtn.hidden = true; },
+  onOfflineReady: () => { /* primeira instalação do cache: o jogo já abre sem internet */ },
+});
 
 // ------------------------------------------------------------------ início
 setSpeed(1);

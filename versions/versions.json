@@ -1,0 +1,297 @@
+{
+  "produto": "GS Evolução",
+  "esquema": 1,
+  "current": "0.7.0",
+  "canais": {
+    "stable": "Estável: validada pela suíte de testes e pelas verificações da etapa, sem ressalvas científicas abertas que afetem o uso.",
+    "experimental": "Experimental: funciona e foi testada, mas tem ressalvas documentadas (ex.: validação só em emulação, mecanismos ainda não comprovados).",
+    "dev": "Desenvolvimento: build intermediária, pode quebrar; nunca é apresentada como estável."
+  },
+  "etapas": [
+    {
+      "n": 1,
+      "titulo": "Protótipo evolutivo",
+      "estado": "concluida",
+      "versao": "0.1.0"
+    },
+    {
+      "n": 2,
+      "titulo": "Ecossistema, mobile e IA opcional",
+      "estado": "concluida",
+      "versao": "0.2.0"
+    },
+    {
+      "n": 3,
+      "titulo": "Morfologia, flora e biomas",
+      "estado": "concluida",
+      "versao": "0.3.0"
+    },
+    {
+      "n": 4,
+      "titulo": "Evolução emergente, estabilidade e pressão ambiental",
+      "estado": "concluida",
+      "versao": "0.4.0"
+    },
+    {
+      "n": 5,
+      "titulo": "Ecologia emergente e relações naturais",
+      "estado": "concluida",
+      "versao": "0.5.0",
+      "nota": "auditada em 0.5.1; mutualismo e comensalismo não demonstrados"
+    },
+    {
+      "n": 6,
+      "titulo": "Primeira versão visual integrada",
+      "estado": "concluida",
+      "versao": "0.6.0"
+    },
+    {
+      "n": 7,
+      "titulo": "Acesso mobile, hospedagem e versões",
+      "estado": "concluida",
+      "versao": "0.7.0",
+      "nota": "falta teste em aparelho Android físico"
+    }
+  ],
+  "versions": [
+    {
+      "id": "0.7.0",
+      "channel": "experimental",
+      "date": "2026-11-06",
+      "stage": 7,
+      "commit": null,
+      "title": "Acesso pelo celular: hospedagem, PWA e versões visualizáveis",
+      "novelties": [
+        "Jogo hospedado em link público (GitHub Pages), aberto direto no Chrome do Android",
+        "Instalável como app (PWA): ícone, tela cheia, funciona offline depois da primeira visita",
+        "Página inicial com novidades, etapas, histórico e versões anteriores abertas pelo navegador",
+        "Identificação da versão dentro do jogo (HUD e diálogo Sobre)"
+      ],
+      "visual": [
+        "Marca \"GS Evolução\" e ícone próprio",
+        "Aviso de nova versão com confirmação (nunca atualiza sozinho no meio de uma simulação)"
+      ],
+      "evolutionary": [],
+      "ecological": [],
+      "fixes": [
+        "Caminhos relativos (base ./): funciona em qualquer subcaminho de hospedagem",
+        "O endereço do proxy de IA deixou de ser absoluto"
+      ],
+      "knownIssues": [
+        "Testado em emulação Android (Chromium) e no endereço público; ainda não em aparelho físico",
+        "A IA opcional não existe na hospedagem estática (precisa do proxy local)",
+        "Versões 0.1.0–0.4.0 são builds dos commits antigos e não têm PWA nem aviso de versão próprio (a faixa \"arquivo\" é injetada)"
+      ],
+      "tests": [
+        "npx vitest run",
+        "tsc",
+        "build de produção",
+        "scripts/site-test.mjs (assets, worker, URL, toque, pausa, velocidade, reinício, grades, PWA offline)",
+        "scripts/pwa-update-test.mjs (atualização segura)",
+        "ui-truth / ui-soak / ui-test"
+      ]
+    },
+    {
+      "id": "0.6.0",
+      "channel": "experimental",
+      "date": "2026-11-06",
+      "stage": 6,
+      "commit": "d995881",
+      "title": "Primeira versão visual integrada",
+      "novelties": [
+        "HUD com semente, tempo, organismos, espécies e biomassa",
+        "Cor por espécie, contorno e tamanho mínimo: o mundo vivo fica visível",
+        "Gráfico de população por espécie",
+        "Botão Reiniciar e parâmetros de URL"
+      ],
+      "visual": [
+        "Organismos legíveis sobre o terreno",
+        "HUD também no celular"
+      ],
+      "evolutionary": [],
+      "ecological": [],
+      "fixes": [
+        "Erro ao trocar para um mundo de outra grade",
+        "Erro 500 no console ao abrir (consulta ao proxy de IA só ao abrir a aba)"
+      ],
+      "knownIssues": [
+        "Série por espécie só existe na sessão do navegador",
+        "Validação visual só em emulação"
+      ],
+      "tests": [
+        "198 testes",
+        "ui-truth 30/30 (cada organismo desenhado = motor)",
+        "ui-soak 14/14",
+        "ui-test 129/129"
+      ]
+    },
+    {
+      "id": "0.5.1",
+      "channel": "experimental",
+      "date": "2026-11-06",
+      "stage": 5,
+      "commit": "31923d9",
+      "title": "Auditoria científica da Etapa 5",
+      "novelties": [
+        "Protocolo pré-registrado e experimentos reproduzíveis (docs/AUDITORIA_ETAPA_5.md)"
+      ],
+      "visual": [],
+      "evolutionary": [],
+      "ecological": [
+        "Competição demonstrada causalmente; mutualismo e comensalismo sem suporte"
+      ],
+      "fixes": [
+        "A análise por remoção não perde biomassa por troca de rótulo na especiação"
+      ],
+      "knownIssues": [
+        "Limiar de exsudação sem justificativa biológica",
+        "O teste de barreira letal tem premissa questionada"
+      ],
+      "tests": [
+        "suíte completa",
+        "longa duração com e sem ecologia"
+      ]
+    },
+    {
+      "id": "0.5.0",
+      "channel": "experimental",
+      "date": "2026-11-06",
+      "stage": 5,
+      "commit": "56d5e45",
+      "title": "Ecologia emergente",
+      "novelties": [
+        "Exsudação por saturação energética",
+        "Abrigo estrutural pela vegetação",
+        "Registro de fluxos de matéria",
+        "Análise causal por remoção de grupos"
+      ],
+      "visual": [
+        "Caixa \"Ecologia emergente\" ao criar o mundo"
+      ],
+      "evolutionary": [],
+      "ecological": [
+        "Mecanismos gerais atrás de uma opção (desligada por padrão): nenhuma relação é programada"
+      ],
+      "fixes": [],
+      "knownIssues": [
+        "Resultados da ecologia são fracos/indeterminados em mundos naturais",
+        "Sem parasitismo"
+      ],
+      "tests": [
+        "mecanismo/ausência 17",
+        "emergência 8",
+        "longa duração 6"
+      ]
+    },
+    {
+      "id": "0.4.0",
+      "channel": "stable",
+      "date": "2026-11-04",
+      "stage": 4,
+      "commit": "68ffeb4",
+      "title": "Evolução emergente, estabilidade e pressão ambiental",
+      "novelties": [
+        "Ambiente estável opcional",
+        "Pressões ambientais: clima, aridez, luz, nutrientes",
+        "Experimentos A×B reproduzíveis",
+        "Aba Evolução e diagnósticos"
+      ],
+      "visual": [
+        "Aba Evolução",
+        "Controles de pressão ambiental"
+      ],
+      "evolutionary": [
+        "Diagnóstico de especiação sem alterar critérios",
+        "Viabilidade de intermediários terrestres"
+      ],
+      "ecological": [],
+      "fixes": [],
+      "knownIssues": [
+        "Diversificação no modo Etapa 3 depende da semente e do tempo"
+      ],
+      "tests": [
+        "suíte completa",
+        "physics-lock",
+        "longa duração"
+      ]
+    },
+    {
+      "id": "0.3.0",
+      "channel": "stable",
+      "date": "2026-11-03",
+      "stage": 3,
+      "commit": "9b30df1",
+      "title": "Morfologia, flora e biomas",
+      "novelties": [
+        "Plano corporal procedural",
+        "Flora e continentes",
+        "Biomas emergentes"
+      ],
+      "visual": [
+        "Criaturas e plantas procedurais"
+      ],
+      "evolutionary": [
+        "Genes morfológicos com pré-requisitos"
+      ],
+      "ecological": [
+        "Herbivoria"
+      ],
+      "fixes": [],
+      "knownIssues": [],
+      "tests": [
+        "suíte completa",
+        "physics-lock"
+      ]
+    },
+    {
+      "id": "0.2.0",
+      "channel": "stable",
+      "date": "2026-11-02",
+      "stage": 2,
+      "commit": "17451f6",
+      "title": "Mobile, acontecimentos e IA opcional",
+      "novelties": [
+        "Interface para celular (toque, pinça, folhas)",
+        "Gerenciador de acontecimentos",
+        "IA opcional independente de provedor"
+      ],
+      "visual": [
+        "Layout responsivo"
+      ],
+      "evolutionary": [],
+      "ecological": [
+        "Teia alimentar dinâmica"
+      ],
+      "fixes": [],
+      "knownIssues": [],
+      "tests": [
+        "suíte completa"
+      ]
+    },
+    {
+      "id": "0.1.0",
+      "channel": "stable",
+      "date": "2026-11-02",
+      "stage": 1,
+      "commit": "2016952",
+      "title": "Protótipo evolutivo",
+      "novelties": [
+        "Planeta 2D, oceano, unicelulares, genética, mutação, seleção e especiação"
+      ],
+      "visual": [
+        "Mapa, camadas e gráficos"
+      ],
+      "evolutionary": [
+        "Seleção natural, hereditariedade, mutação e especiação"
+      ],
+      "ecological": [
+        "Competição por luz e nutrientes, predação"
+      ],
+      "fixes": [],
+      "knownIssues": [],
+      "tests": [
+        "suíte da Etapa 1"
+      ]
+    }
+  ]
+}

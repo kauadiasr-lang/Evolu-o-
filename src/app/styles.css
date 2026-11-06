@@ -261,3 +261,17 @@ body.stage3 .brushr.s3only { display: flex !important; }
 
 #bp-spop { position: absolute; } .spop-log { position: absolute; right: 14px; top: 8px; z-index: 3; font-size: 11px; padding: 3px 9px; border-radius: 12px; background: rgba(8, 14, 28, .85); min-height: 0; }
 @media (pointer: coarse) { .spop-log { min-height: 36px; } }
+
+/* ============ Etapa 7: versão, PWA ============ */
+.hud-ver { grid-column: 1 / -1; text-align: left; font-family: var(--mono); font-size: 10.5px; padding: 2px 6px; border-radius: 6px; background: transparent; border-color: transparent; color: var(--muted); min-height: 0; }
+.hud-ver b { color: #eaf3ff; font-weight: 600; }
+.ch { display: inline-block; padding: 0 6px; border-radius: 8px; font-size: 10px; margin-left: 4px; }
+.ch.stable { background: #123a26; color: #8fe3a0; } .ch.experimental { background: #3a2f10; color: #f1c35c; } .ch.dev { background: #3a1519; color: #ff9a9a; }
+@media (max-width: 820px), (max-height: 520px) and (pointer: coarse) { .hud-ver { grid-column: auto; flex: 1 0 100%; min-height: 28px; } }
+#update-bar { position: fixed; left: 8px; right: 8px; top: calc(8px + env(safe-area-inset-top)); z-index: 60; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; background: #0f2a35; border: 1px solid var(--accent); border-radius: 12px; padding: 10px 12px; box-shadow: 0 8px 30px rgba(0,0,0,.6); }
+#update-bar[hidden] { display: none; }
+#update-bar b { display: block; color: #fff; } #update-bar span { color: #c3d2e6; font-size: 12px; }
+.up-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+a.btn { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line2); border-radius: 8px; padding: 6px 12px; color: var(--text); text-decoration: none; background: var(--panel2); }
+#ab-kv { margin: 8px 0; }
+button[hidden] { display: none !important; }

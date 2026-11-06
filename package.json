@@ -1,6 +1,6 @@
 {
   "name": "evolvere",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "private": true,
   "description": "EVOLVERE — Simulador de evolução e ecossistemas emergentes",
   "type": "module",
@@ -14,7 +14,15 @@
     "headless": "npx tsx scripts/headless.ts",
     "ai-proxy": "node server/ai-proxy.mjs",
     "ai-smoke": "tsx scripts/ai-smoke.ts",
-    "test:ui": "node scripts/ui-test.mjs"
+    "test:ui": "node scripts/ui-test.mjs",
+    "build:site": "node scripts/build-site.mjs",
+    "serve:site": "node scripts/serve-site.mjs site-dist --prefix /Evolu-o-",
+    "release:archive": "node scripts/archive-release.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "test:site": "node scripts/site-test.mjs",
+    "test:pwa-update": "node scripts/pwa-update-test.mjs",
+    "test:truth": "node scripts/ui-truth.mjs",
+    "test:soak": "node scripts/ui-soak.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
