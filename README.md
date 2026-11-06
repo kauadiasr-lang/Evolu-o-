@@ -204,6 +204,20 @@ removida; hipóteses sobre adaptações são texto. Sem IA, o cronista local nar
   não edita genes, não cria eventos sem validação e é instruída a tratar causas como hipóteses.
 * Resultados por semente (inclusive as que não se adaptaram ou não especiaram): `docs/EXPERIMENTS.md`.
 
+## Etapa 5 — ecologia emergente e relações naturais
+
+Detalhes, diagnóstico, resultados (inclusive negativos) e limitações: **`docs/ECOLOGIA.md`**.
+
+* Nenhuma relação é programada (sem tabela de pares, sem rótulo que determine comportamento). Com `SimConfig.ecology`
+  (padrão desligado; caixa "Ecologia emergente" ao criar o mundo) entram dois mecanismos gerais: **exsudação** por excesso
+  metabólico (energia saturada → matéria vaza para o detrito local) e **abrigo estrutural** (cobertura vegetal reduz a captura
+  de presas pequenas), além de um **registro de fluxos** de matéria por espécie.
+* **Análise causal** (`src/core/ecology.ts`, `scripts/ecology.ts`): remoção de um grupo em bifurcações do mesmo estado, com
+  réplicas e controle, limitando o viés de matéria (detrito × sedimento). Se os dados não sustentam um sinal robusto, a relação
+  fica **indeterminada**. Rótulos são interpretação de efeito líquido num horizonte, nunca causa do comportamento.
+* Com `ecology:false` a física é a mesma de antes, bit a bit (`physics-lock`, fingerprint de 30 000 ticks).
+* Não implementado: parasitismo (extração não letal), construção de abrigos, escolha ativa de presa, ledger energético fechado.
+
 ## Estado atual por etapa
 
 | Etapa | Estado |

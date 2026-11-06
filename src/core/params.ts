@@ -36,6 +36,10 @@ export const P = {
   PRED_ASSIM: 0.55,
   PRED_ENERGY_EFF: 0.35,
   PRED_ENERGY_STEAL: 0.4,
+  // --- ecologia emergente (Etapa 5; só com SimConfig.ecology)
+  EXUDE_K: 0.004, // fração da massa perdida por tick como exsudato quando a energia está saturada
+  EXUDE_FROM: 0.6, // fração da capacidade energética acima da qual há excesso metabólico
+  REFUGE_K: 0.6, // fração da captura que a cobertura vegetal pode impedir (presas pequenas)
   // --- morte
   SENESCENCE: 0.03,
   THERMAL_STRESS: 0.9,

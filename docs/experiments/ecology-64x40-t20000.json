@@ -1,0 +1,548 @@
+{
+ "w": 64,
+ "h": 40,
+ "stage3": false,
+ "ticks": 20000,
+ "horizon": 250,
+ "reps": 3,
+ "seeds": [
+  1,
+  2,
+  3,
+  4
+ ],
+ "results": [
+  {
+   "seed": 1,
+   "speciesAlive": 13,
+   "groups": [
+    "Protocellula viridis#2",
+    "Protocellula viridis III#5",
+    "Protocellula primordialis#1"
+   ],
+   "flows": {
+    "nutriente": 376503.2,
+    "detrito": 1099148.6,
+    "presa": 198305.6,
+    "planta": 0,
+    "exsudato": 482825.4
+   },
+   "foodWeb": [
+    {
+     "consumer": 2,
+     "prey": 2,
+     "mass": 1335.7212267997986
+    },
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 175.44079124678026
+    },
+    {
+     "consumer": 5,
+     "prey": 5,
+     "mass": 65.59339271294552
+    },
+    {
+     "consumer": 2,
+     "prey": 9,
+     "mass": 63.629851801892165
+    },
+    {
+     "consumer": 2,
+     "prey": 11,
+     "mass": 51.50203683447501
+    },
+    {
+     "consumer": 7,
+     "prey": 7,
+     "mass": 44.725889726394215
+    },
+    {
+     "consumer": 2,
+     "prey": 4,
+     "mass": 42.441159570975515
+    },
+    {
+     "consumer": 4,
+     "prey": 11,
+     "mass": 34.580061345152295
+    }
+   ],
+   "massDrift": -2.626165951369331e-13,
+   "pairs": [
+    {
+     "a": "Protocellula viridis#2",
+     "b": "Protocellula viridis III#5",
+     "aOnB": {
+      "diff": 0.3244024373619153,
+      "se": 0.011770201194245171,
+      "diffSink": 0.008227466187313754,
+      "seSink": 0.0055425895013932695,
+      "sign": "~",
+      "nB": 604
+     },
+     "bOnA": {
+      "diff": 0.00013889970804644748,
+      "se": 0.001387400400110434,
+      "diffSink": -0.0009846395254870651,
+      "seSink": 0.001485243109387597,
+      "sign": "0",
+      "nB": 2227
+     },
+     "flowAeatsB": 5.7575379804823354,
+     "flowBeatsA": 0,
+     "label": "indeterminada",
+     "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+    },
+    {
+     "a": "Protocellula viridis#2",
+     "b": "Protocellula primordialis#1",
+     "aOnB": {
+      "diff": 0.19159501711807017,
+      "se": 0.003629257053672461,
+      "diffSink": 0.04664863203363168,
+      "seSink": 0.004421552777422161,
+      "sign": "~",
+      "nB": 470
+     },
+     "bOnA": {
+      "diff": 0.08546394099129889,
+      "se": 0.0022709837937706385,
+      "diffSink": -0.0017124801209967514,
+      "seSink": 0.0007913475597847573,
+      "sign": "0",
+      "nB": 2227
+     },
+     "flowAeatsB": 9.97157299829493,
+     "flowBeatsA": 10.266810799446814,
+     "label": "indeterminada",
+     "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+    },
+    {
+     "a": "Protocellula viridis III#5",
+     "b": "Protocellula primordialis#1",
+     "aOnB": {
+      "diff": 0.018176239920957824,
+      "se": 0.0069742924085018235,
+      "diffSink": 0.007649287220009992,
+      "seSink": 0.006677485411539485,
+      "sign": "0",
+      "nB": 470
+     },
+     "bOnA": {
+      "diff": 0.0023712605590516106,
+      "se": 0.016486213390385217,
+      "diffSink": 0.005155970628798398,
+      "seSink": 0.005292539821023653,
+      "sign": "0",
+      "nB": 604
+     },
+     "flowAeatsB": 0,
+     "flowBeatsA": 0,
+     "label": "sem efeito detectável",
+     "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+    }
+   ]
+  },
+  {
+   "seed": 2,
+   "speciesAlive": 11,
+   "groups": [
+    "Protocellula viridis#2",
+    "Calchozoa viridis#8",
+    "Syntoella viridis#5"
+   ],
+   "flows": {
+    "nutriente": 373492.6,
+    "detrito": 1075755.9,
+    "presa": 140008.3,
+    "planta": 0,
+    "exsudato": 541932.9
+   },
+   "foodWeb": [
+    {
+     "consumer": 2,
+     "prey": 2,
+     "mass": 467.90439186311056
+    },
+    {
+     "consumer": 2,
+     "prey": 8,
+     "mass": 167.41783758007318
+    },
+    {
+     "consumer": 2,
+     "prey": 7,
+     "mass": 83.4984498003813
+    },
+    {
+     "consumer": 5,
+     "prey": 5,
+     "mass": 56.370902149796265
+    },
+    {
+     "consumer": 5,
+     "prey": 2,
+     "mass": 42.99988614897573
+    },
+    {
+     "consumer": 5,
+     "prey": 7,
+     "mass": 32.154809570223044
+    },
+    {
+     "consumer": 4,
+     "prey": 4,
+     "mass": 23.578252510509696
+    },
+    {
+     "consumer": 2,
+     "prey": 5,
+     "mass": 20.45892917981987
+    }
+   ],
+   "massDrift": -2.0658522511699363e-13,
+   "pairs": [
+    {
+     "a": "Protocellula viridis#2",
+     "b": "Calchozoa viridis#8",
+     "aOnB": {
+      "diff": 0.9588396765810815,
+      "se": 0.03723747998908997,
+      "diffSink": 0.23143527481369874,
+      "seSink": 0.035079318740506696,
+      "sign": "-",
+      "nB": 637
+     },
+     "bOnA": {
+      "diff": -0.005188414926571489,
+      "se": 0.004495819199015415,
+      "diffSink": -0.012840539302982207,
+      "seSink": 0.0041755860095992825,
+      "sign": "0",
+      "nB": 2630
+     },
+     "flowAeatsB": 178.95936008122962,
+     "flowBeatsA": 0,
+     "label": "consumo sem benefício líquido detectável (A consome B)",
+     "evidence": "consumo direto registrado e B é prejudicado; o ganho de A não aparece no efeito da remoção de B (hipótese: ganho pequeno ou diluído)"
+    },
+    {
+     "a": "Protocellula viridis#2",
+     "b": "Syntoella viridis#5",
+     "aOnB": {
+      "diff": 1.1166290980585694,
+      "se": 0.009083449547630148,
+      "diffSink": -0.02199092007012269,
+      "seSink": 0.0061402864856838464,
+      "sign": "~",
+      "nB": 633
+     },
+     "bOnA": {
+      "diff": 0.1899012374354164,
+      "se": 0.00308768065559298,
+      "diffSink": 0.006781789658198361,
+      "seSink": 0.0033959926490873455,
+      "sign": "~",
+      "nB": 2630
+     },
+     "flowAeatsB": 28.805713658698856,
+     "flowBeatsA": 40.76458618336324,
+     "label": "indeterminada",
+     "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+    },
+    {
+     "a": "Calchozoa viridis#8",
+     "b": "Syntoella viridis#5",
+     "aOnB": {
+      "diff": 0.0010717577448286532,
+      "se": 0.004280888634090427,
+      "diffSink": 0.01996319346282876,
+      "seSink": 0.009973606576585456,
+      "sign": "0",
+      "nB": 633
+     },
+     "bOnA": {
+      "diff": 0.007549168402526757,
+      "se": 0.0479015966803098,
+      "diffSink": -0.01895014749259804,
+      "seSink": 0.03778845155538973,
+      "sign": "0",
+      "nB": 637
+     },
+     "flowAeatsB": 0,
+     "flowBeatsA": 0,
+     "label": "sem efeito detectável",
+     "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+    }
+   ]
+  },
+  {
+   "seed": 3,
+   "speciesAlive": 23,
+   "groups": [
+    "Protocellula viridis VIII#19",
+    "Biorophyta gigas#22",
+    "Calbaina viridis#14"
+   ],
+   "flows": {
+    "nutriente": 400498.7,
+    "detrito": 1139436.2,
+    "presa": 249877.4,
+    "planta": 0,
+    "exsudato": 556474.2
+   },
+   "foodWeb": [
+    {
+     "consumer": 22,
+     "prey": 22,
+     "mass": 533.5668881879585
+    },
+    {
+     "consumer": 19,
+     "prey": 19,
+     "mass": 441.1608248613676
+    },
+    {
+     "consumer": 19,
+     "prey": 29,
+     "mass": 226.25698881949128
+    },
+    {
+     "consumer": 23,
+     "prey": 23,
+     "mass": 152.89527572210304
+    },
+    {
+     "consumer": 26,
+     "prey": 26,
+     "mass": 147.13528923051075
+    },
+    {
+     "consumer": 14,
+     "prey": 14,
+     "mass": 125.06831850381995
+    },
+    {
+     "consumer": 3,
+     "prey": 3,
+     "mass": 114.46691581233864
+    },
+    {
+     "consumer": 26,
+     "prey": 14,
+     "mass": 66.82591137850463
+    }
+   ],
+   "massDrift": -2.4605079878321197e-13,
+   "pairs": [
+    {
+     "a": "Protocellula viridis VIII#19",
+     "b": "Biorophyta gigas#22",
+     "aOnB": {
+      "diff": 0.002018629961715832,
+      "se": 0.004925879348388885,
+      "diffSink": 0.000419974276256771,
+      "seSink": 0.004528061385828882,
+      "sign": "0",
+      "nB": 655
+     },
+     "bOnA": {
+      "diff": -0.0006253234286427722,
+      "se": 0.008958342747322276,
+      "diffSink": 0.0026273591536772403,
+      "seSink": 0.00448185837875789,
+      "sign": "0",
+      "nB": 1533
+     },
+     "flowAeatsB": 0,
+     "flowBeatsA": 0,
+     "label": "sem efeito detectável",
+     "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+    },
+    {
+     "a": "Protocellula viridis VIII#19",
+     "b": "Calbaina viridis#14",
+     "aOnB": {
+      "diff": 0.02475407931564849,
+      "se": 0.019275238106885847,
+      "diffSink": 0.014500846911407994,
+      "seSink": 0.01734401832808885,
+      "sign": "0",
+      "nB": 453
+     },
+     "bOnA": {
+      "diff": 0.006095583975311332,
+      "se": 0.005219867515296642,
+      "diffSink": 0.0025479562047607046,
+      "seSink": 0.006395348912389803,
+      "sign": "0",
+      "nB": 1533
+     },
+     "flowAeatsB": 0,
+     "flowBeatsA": 0,
+     "label": "sem efeito detectável",
+     "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+    },
+    {
+     "a": "Biorophyta gigas#22",
+     "b": "Calbaina viridis#14",
+     "aOnB": {
+      "diff": 0.07598707842481417,
+      "se": 0.016533597450182354,
+      "diffSink": 0.016913517024302258,
+      "seSink": 0.01505633426900126,
+      "sign": "0",
+      "nB": 453
+     },
+     "bOnA": {
+      "diff": 0.006485173843871649,
+      "se": 0.003495023408355454,
+      "diffSink": 0.0004657273804249207,
+      "seSink": 0.005691655138266326,
+      "sign": "0",
+      "nB": 655
+     },
+     "flowAeatsB": 9.671753990155697,
+     "flowBeatsA": 0,
+     "label": "sem efeito detectável",
+     "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+    }
+   ]
+  },
+  {
+   "seed": 4,
+   "speciesAlive": 8,
+   "groups": [
+    "Protocellula cryophilus#2",
+    "Glydoella viridis#4",
+    "Protocellula primordialis#1"
+   ],
+   "flows": {
+    "nutriente": 501659.6,
+    "detrito": 1487762.5,
+    "presa": 199729,
+    "planta": 0,
+    "exsudato": 768134.8
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 1038.6482092440585
+    },
+    {
+     "consumer": 4,
+     "prey": 4,
+     "mass": 165.80796427588908
+    },
+    {
+     "consumer": 2,
+     "prey": 2,
+     "mass": 41.66728290834753
+    },
+    {
+     "consumer": 4,
+     "prey": 1,
+     "mass": 38.76842005304209
+    },
+    {
+     "consumer": 4,
+     "prey": 3,
+     "mass": 19.225714091047507
+    },
+    {
+     "consumer": 1,
+     "prey": 6,
+     "mass": 14.2408258647332
+    },
+    {
+     "consumer": 6,
+     "prey": 6,
+     "mass": 12.206617147586067
+    },
+    {
+     "consumer": 1,
+     "prey": 3,
+     "mass": 9.97210115412551
+    }
+   ],
+   "massDrift": -2.176290893528079e-13,
+   "pairs": [
+    {
+     "a": "Protocellula cryophilus#2",
+     "b": "Glydoella viridis#4",
+     "aOnB": {
+      "diff": 0.015425044661398392,
+      "se": 0.0013607644217487546,
+      "diffSink": 0.0014841060445014813,
+      "seSink": 0.002278274545761271,
+      "sign": "0",
+      "nB": 1754
+     },
+     "bOnA": {
+      "diff": 0.20547073848270495,
+      "se": 0.02459975628880859,
+      "diffSink": 0.004955435706295259,
+      "seSink": 0.0043675083788439414,
+      "sign": "~",
+      "nB": 2399
+     },
+     "flowAeatsB": 0,
+     "flowBeatsA": 21.22996054150007,
+     "label": "indeterminada",
+     "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+    },
+    {
+     "a": "Protocellula cryophilus#2",
+     "b": "Protocellula primordialis#1",
+     "aOnB": {
+      "diff": 0.0018277719636353709,
+      "se": 0.0016162671079588227,
+      "diffSink": -0.0082693616602367,
+      "seSink": 0.0013980666921423529,
+      "sign": "0",
+      "nB": 1496
+     },
+     "bOnA": {
+      "diff": 0.0075541295472194,
+      "se": 0.00802044432836387,
+      "diffSink": -0.0014679743803322313,
+      "seSink": 0.003462973218056144,
+      "sign": "0",
+      "nB": 2399
+     },
+     "flowAeatsB": 1.6474468401526374,
+     "flowBeatsA": 1.5012489568744642,
+     "label": "sem efeito detectável",
+     "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+    },
+    {
+     "a": "Glydoella viridis#4",
+     "b": "Protocellula primordialis#1",
+     "aOnB": {
+      "diff": 0.44228430385913725,
+      "se": 0.009362616207923176,
+      "diffSink": 0.0020799548272764116,
+      "seSink": 0.0024866109266543316,
+      "sign": "~",
+      "nB": 1496
+     },
+     "bOnA": {
+      "diff": 0.06498167914883086,
+      "se": 0.00401311192366391,
+      "diffSink": -0.008490931447316443,
+      "seSink": 0.0014515347816992808,
+      "sign": "0",
+      "nB": 1754
+     },
+     "flowAeatsB": 42.799700368957865,
+     "flowBeatsA": 0,
+     "label": "indeterminada",
+     "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+    }
+   ]
+  }
+ ]
+}

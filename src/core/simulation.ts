@@ -1,6 +1,7 @@
 import { BASE_GENES, DEFAULT_MUTATION, G, GENE_COUNT, MutationParams, inherit, protocellGenome, protocellMorph } from './genome';
 import { ARCHETYPES, ArchetypeKind, archetypeGenome } from './archetypes';
 import { Flora } from './flora';
+import { exudation, refugeFactor } from './ecomech';
 import { camoMatch, develop } from './phenotype';
 import { ENV_LABEL, EnvChange, validateEnvChange } from './envchange';
 import { BIOME_INFO, computeTerrain, landMean } from './biomes';
@@ -25,6 +26,8 @@ export interface SimConfig {
   maxPlants: number;
   /** ambiente relativamente constante: sem estações e sem erupções naturais (base para experimentos) */
   stable: boolean;
+  /** Etapa 5: exsudação do excesso metabólico, refúgio por vegetação e registro de fluxos. false = física anterior, bit a bit. */
+  ecology: boolean;
 }
 
 export const DEFAULT_CONFIG: SimConfig = {
@@ -38,6 +41,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   stage3: false,
   maxPlants: 12000,
   stable: false,
+  ecology: false,
 };
 
 /** Gancho de instrumentação: observa nascimentos, mortes e exposição sem alterar o estado. */
@@ -46,6 +50,10 @@ export interface Tracker {
   death(i: number, cause: DeathCause): void;
   expose(i: number): void;
 }
+
+/** Tipos de fluxo de matéria registrados por espécie (apenas observação; não afeta a simulação). */
+export const FLOW_KINDS = ['nutriente', 'detrito', 'presa', 'planta', 'exsudato'] as const;
+export const FLOW_N = FLOW_KINDS.length;
 
 export type DeathCause = 'starve' | 'age' | 'predation' | 'thermal' | 'impact';
 const CAUSE_INDEX: Record<DeathCause, number> = { starve: 0, age: 1, predation: 2, thermal: 3, impact: 4 };
@@ -86,6 +94,9 @@ export class Simulation {
 
   /** fluxos de predação recentes, chave = pred*1e6+presa, valor = massa consumida (suavizada) */
   predFlow = new Map<number, number>();
+  /** massa acumulada por espécie × tipo de fluxo (FLOW_KINDS); só preenchido com ecology */
+  ecoFlow = new Float64Array(FLOW_N * 64);
+  readonly ecology: boolean;
   /** energia obtida recentemente por espécie e fonte: [luz, detrito, presas] */
   energySrc = new Float64Array(3 * 64);
 
@@ -118,6 +129,7 @@ export class Simulation {
     this.cfg = { ...DEFAULT_CONFIG, ...cfg };
     this.rng = new Rng(this.cfg.seed);
     this.stage3 = this.cfg.stage3;
+    this.ecology = !!this.cfg.ecology;
     this.mrng = new Rng((this.cfg.seed ^ 0x5bd1e995) >>> 0);
     this.planet = new Planet(this.cfg.width, this.cfg.height);
     if (this.cfg.stable) {
@@ -375,6 +387,7 @@ export class Simulation {
         planet.detritus[c] = det - a;
         mass += a * P.ASSIM_DETRITUS;
         planet.nutrient[c] += a * (1 - P.ASSIM_DETRITUS);
+        if (this.ecology) this.addFlow(sId, 1, a);
         const e = a * P.E_PER_MASS * P.DET_EFF;
         energy += e;
         this.addSrc(sId, 1, e);
@@ -401,6 +414,11 @@ export class Simulation {
               const cj = tr[jb + T.CAMO];
               if (cj > 0) p *= 1 - 0.6 * cj * camoMatch(tr[jb + T.BODYHUE], planet.bgHue[c]);
               if (land && tr[jb + T.CLIMB] > 0) p *= 1 - 0.35 * tr[jb + T.CLIMB];
+              // estrutura criada pela vegetação: presas pequenas se escondem na cobertura (Etapa 5)
+              if (this.ecology && land) {
+                const rj = tr[jb + T.RADIUS];
+                p *= refugeFactor(this.flora!.cover[c], rj);
+              }
             }
             if (rng.next() < p * tf) {
               const gainM = mj * P.PRED_ASSIM;
@@ -409,6 +427,7 @@ export class Simulation {
               const e = pool.energy[j] * P.PRED_ENERGY_STEAL + mj * P.E_PER_MASS * P.PRED_ENERGY_EFF;
               energy += e;
               this.addSrc(sId, 2, e);
+              if (this.ecology) this.addFlow(sId, 2, mj);
               const key = sId * 1e6 + pool.species[j];
               this.predFlow.set(key, (this.predFlow.get(key) ?? 0) + mj);
               // morte da presa (massa já redistribuída)
@@ -436,6 +455,7 @@ export class Simulation {
         const e = eat * P.E_PER_MASS * 0.45;
         energy += e;
         this.addSrc(sId, 2, e);
+        if (this.ecology) this.addFlow(sId, 3, eat);
       }
     }
 
@@ -459,7 +479,17 @@ export class Simulation {
           mass += g;
           energy -= g * P.BUILD_COST;
           planet.nutrient[c] = nut - g;
+          if (this.ecology) this.addFlow(sId, 0, g);
         }
+      }
+    }
+    if (this.ecology) {
+      // excesso metabólico: com energia saturada e matéria limitante, parte do corpo vaza como exsudato (vira detrito local)
+      const leak = exudation(mass, energy / (P.ECAP_PER_MASS * mass));
+      if (leak > 0) {
+        mass -= leak;
+        planet.detritus[c] += leak;
+        this.addFlow(sId, 4, leak);
       }
     }
     const ecap = P.ECAP_PER_MASS * mass;
@@ -502,6 +532,31 @@ export class Simulation {
     if (this.tracker) this.tracker.expose(i);
 
     this.move(i, c, tf);
+  }
+
+  private addFlow(sp: number, k: number, v: number): void {
+    const idx = sp * FLOW_N + k;
+    if (idx >= this.ecoFlow.length) {
+      const n = new Float64Array(Math.max(this.ecoFlow.length * 2, idx + FLOW_N));
+      n.set(this.ecoFlow);
+      this.ecoFlow = n;
+    }
+    this.ecoFlow[idx] += v;
+  }
+
+  /**
+   * Remove (por morte) todos os organismos que satisfazem o teste. Instrumento de experimento causal: com
+   * `toReservoir` a massa vai ao sedimento (sem o pulso de detrito que enviesaria o efeito); caso contrário vira detrito local.
+   */
+  removeWhere(test: (i: number) => boolean, toReservoir = true): number {
+    let n = 0;
+    for (let i = 0; i < this.pool.used; i++) {
+      if (!this.pool.alive[i] || !test(i)) continue;
+      if (toReservoir) this.planet.reservoir += this.pool.mass[i];
+      this.kill(i, 'impact', !toReservoir);
+      n++;
+    }
+    return n;
   }
 
   private addSrc(sp: number, k: number, v: number): void {

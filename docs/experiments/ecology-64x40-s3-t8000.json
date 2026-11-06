@@ -1,0 +1,182 @@
+{
+ "w": 64,
+ "h": 40,
+ "stage3": true,
+ "ticks": 8000,
+ "horizon": 250,
+ "reps": 3,
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6
+ ],
+ "results": [
+  {
+   "seed": 1,
+   "speciesAlive": 1,
+   "groups": [
+    "Protocellula primordialis#1"
+   ],
+   "flows": {
+    "nutriente": 136606.2,
+    "detrito": 374789.6,
+    "presa": 17363,
+    "planta": 0,
+    "exsudato": 215751.2
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 543.4774855231186
+    }
+   ],
+   "massDrift": 3.9027067292149045e-13,
+   "pairs": []
+  },
+  {
+   "seed": 2,
+   "speciesAlive": 1,
+   "groups": [
+    "Protocellula primordialis#1"
+   ],
+   "flows": {
+    "nutriente": 110262.5,
+    "detrito": 297477.1,
+    "presa": 28025.3,
+    "planta": 0,
+    "exsudato": 171496.6
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 963.8450960984868
+    }
+   ],
+   "massDrift": 2.881149287402098e-13,
+   "pairs": []
+  },
+  {
+   "seed": 3,
+   "speciesAlive": 1,
+   "groups": [
+    "Protocellula primordialis#1"
+   ],
+   "flows": {
+    "nutriente": 101846,
+    "detrito": 265572.3,
+    "presa": 8122.2,
+    "planta": 0,
+    "exsudato": 175869.5
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 329.60536615642195
+    }
+   ],
+   "massDrift": 3.439838889919753e-13,
+   "pairs": []
+  },
+  {
+   "seed": 4,
+   "speciesAlive": 2,
+   "groups": [
+    "Protocellula primordialis#1",
+    "Protocellula viridis#2"
+   ],
+   "flows": {
+    "nutriente": 137570.1,
+    "detrito": 379871.1,
+    "presa": 41489.5,
+    "planta": 0,
+    "exsudato": 229349.5
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 1497.690497241206
+    }
+   ],
+   "massDrift": 2.864908310584725e-13,
+   "pairs": [
+    {
+     "a": "Protocellula primordialis#1",
+     "b": "Protocellula viridis#2",
+     "aOnB": {
+      "diff": 0.006478252371152515,
+      "se": 0.007995271153469494,
+      "diffSink": -0.015937539410616153,
+      "seSink": 0.006749173841447986,
+      "sign": "0",
+      "nB": 1110
+     },
+     "bOnA": {
+      "diff": 0.21265312687385715,
+      "se": 0.0023714627714191694,
+      "diffSink": 0.026658672548715873,
+      "seSink": 0.001318038168816084,
+      "sign": "~",
+      "nB": 7485
+     },
+     "flowAeatsB": 0,
+     "flowBeatsA": 77.88354868340598,
+     "label": "indeterminada",
+     "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+    }
+   ]
+  },
+  {
+   "seed": 5,
+   "speciesAlive": 1,
+   "groups": [
+    "Protocellula primordialis#1"
+   ],
+   "flows": {
+    "nutriente": 105513.5,
+    "detrito": 273147.5,
+    "presa": 537.3,
+    "planta": 0,
+    "exsudato": 176563.4
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 24.19080195316244
+    }
+   ],
+   "massDrift": 3.66558846768125e-13,
+   "pairs": []
+  },
+  {
+   "seed": 6,
+   "speciesAlive": 1,
+   "groups": [
+    "Protocellula primordialis#1"
+   ],
+   "flows": {
+    "nutriente": 138081.4,
+    "detrito": 373427.6,
+    "presa": 20452,
+    "planta": 0,
+    "exsudato": 240372.5
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 1047.9973494714532
+    }
+   ],
+   "massDrift": 3.4073569362850074e-13,
+   "pairs": []
+  }
+ ]
+}

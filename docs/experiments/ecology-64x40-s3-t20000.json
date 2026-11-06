@@ -1,0 +1,369 @@
+{
+ "w": 64,
+ "h": 40,
+ "stage3": true,
+ "ticks": 20000,
+ "horizon": 250,
+ "reps": 3,
+ "seeds": [
+  1,
+  2,
+  3,
+  4
+ ],
+ "results": [
+  {
+   "seed": 1,
+   "speciesAlive": 7,
+   "groups": [
+    "Protocellula primordialis#1",
+    "Vorphymonas viridis#8",
+    "Micnibacter gigas#3"
+   ],
+   "flows": {
+    "nutriente": 338574.5,
+    "detrito": 1002575,
+    "presa": 80784.3,
+    "planta": 0.5,
+    "exsudato": 626136
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 623.2361721759439
+    },
+    {
+     "consumer": 8,
+     "prey": 1,
+     "mass": 227.21732141748004
+    },
+    {
+     "consumer": 3,
+     "prey": 3,
+     "mass": 154.20942541772598
+    },
+    {
+     "consumer": 8,
+     "prey": 8,
+     "mass": 31.123412472488045
+    },
+    {
+     "consumer": 3,
+     "prey": 8,
+     "mass": 21.327305087038084
+    },
+    {
+     "consumer": 4,
+     "prey": 4,
+     "mass": 9.169024412644927
+    },
+    {
+     "consumer": 6,
+     "prey": 6,
+     "mass": 8.351277262501082
+    },
+    {
+     "consumer": 6,
+     "prey": 1,
+     "mass": 5.667941537952874
+    }
+   ],
+   "massDrift": -1.594863923466099e-13,
+   "pairs": [
+    {
+     "a": "Protocellula primordialis#1",
+     "b": "Vorphymonas viridis#8",
+     "aOnB": {
+      "diff": 0.0922366266936469,
+      "se": 0.030486441419369927,
+      "diffSink": -0.18367176286597625,
+      "seSink": 0.0245781638344601,
+      "sign": "~",
+      "nB": 440
+     },
+     "bOnA": {
+      "diff": 0.14034445225363537,
+      "se": 0.006573819943902578,
+      "diffSink": 0.036698664495674736,
+      "seSink": 0.005745615787992388,
+      "sign": "~",
+      "nB": 7251
+     },
+     "flowAeatsB": 0,
+     "flowBeatsA": 192.4804693271711,
+     "label": "indeterminada",
+     "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+    },
+    {
+     "a": "Protocellula primordialis#1",
+     "b": "Micnibacter gigas#3",
+     "aOnB": {
+      "diff": 0.00974864066562174,
+      "se": 0.0073068500536577615,
+      "diffSink": 0.00849243449825911,
+      "seSink": 0.004532435511492726,
+      "sign": "0",
+      "nB": 262
+     },
+     "bOnA": {
+      "diff": -0.0017508501188397418,
+      "se": 0.005765654433932513,
+      "diffSink": -0.0009299261677192389,
+      "seSink": 0.005741913202379643,
+      "sign": "0",
+      "nB": 7251
+     },
+     "flowAeatsB": 0,
+     "flowBeatsA": 0,
+     "label": "sem efeito detectável",
+     "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+    },
+    {
+     "a": "Vorphymonas viridis#8",
+     "b": "Micnibacter gigas#3",
+     "aOnB": {
+      "diff": 0.0036901293175227393,
+      "se": 0.005191675582416683,
+      "diffSink": 0.0020759053921507765,
+      "seSink": 0.005919680335809981,
+      "sign": "0",
+      "nB": 262
+     },
+     "bOnA": {
+      "diff": 0.03941198596542342,
+      "se": 0.025326823641241922,
+      "diffSink": 0.004154728717348372,
+      "seSink": 0.024224973818297687,
+      "sign": "0",
+      "nB": 440
+     },
+     "flowAeatsB": 0,
+     "flowBeatsA": 4.452503651276843,
+     "label": "sem efeito detectável",
+     "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+    }
+   ]
+  },
+  {
+   "seed": 2,
+   "speciesAlive": 2,
+   "groups": [
+    "Protocellula primordialis#1",
+    "Protocellula versatilis#2"
+   ],
+   "flows": {
+    "nutriente": 330293.6,
+    "detrito": 964902.9,
+    "presa": 150179.7,
+    "planta": 3.2,
+    "exsudato": 548136
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 868.8025914017751
+    },
+    {
+     "consumer": 2,
+     "prey": 2,
+     "mass": 398.0800898107948
+    },
+    {
+     "consumer": 1,
+     "prey": 2,
+     "mass": 88.73439465351098
+    },
+    {
+     "consumer": 2,
+     "prey": 1,
+     "mass": 4.343313019775125
+    }
+   ],
+   "massDrift": -2.626165951369331e-13,
+   "pairs": [
+    {
+     "a": "Protocellula primordialis#1",
+     "b": "Protocellula versatilis#2",
+     "aOnB": {
+      "diff": 0.39850893597376197,
+      "se": 0.06853312226406176,
+      "diffSink": 0.017724446532932703,
+      "seSink": 0.005726006507241753,
+      "sign": "~",
+      "nB": 1422
+     },
+     "bOnA": {
+      "diff": 0.09899179432399187,
+      "se": 0.0015853114162940785,
+      "diffSink": -0.00892162454611581,
+      "seSink": 0.002521272138956064,
+      "sign": "0",
+      "nB": 2039
+     },
+     "flowAeatsB": 82.14670065971112,
+     "flowBeatsA": 5.01095569499491,
+     "label": "indeterminada",
+     "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+    }
+   ]
+  },
+  {
+   "seed": 3,
+   "speciesAlive": 1,
+   "groups": [
+    "Protocellula primordialis#1"
+   ],
+   "flows": {
+    "nutriente": 290203.3,
+    "detrito": 852922.9,
+    "presa": 76254.9,
+    "planta": 0,
+    "exsudato": 562134.5
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 1133.4640735013581
+    }
+   ],
+   "massDrift": -2.0349943952169267e-13,
+   "pairs": []
+  },
+  {
+   "seed": 4,
+   "speciesAlive": 7,
+   "groups": [
+    "Protocellula primordialis#1",
+    "Protocellula viridis#2",
+    "Protocellula cryophilus#4"
+   ],
+   "flows": {
+    "nutriente": 345425.3,
+    "detrito": 1003780.3,
+    "presa": 136246,
+    "planta": 0,
+    "exsudato": 658624.9
+   },
+   "foodWeb": [
+    {
+     "consumer": 2,
+     "prey": 2,
+     "mass": 421.25682762415965
+    },
+    {
+     "consumer": 6,
+     "prey": 6,
+     "mass": 120.07848721571074
+    },
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 95.85166033442363
+    },
+    {
+     "consumer": 1,
+     "prey": 3,
+     "mass": 92.18805946201626
+    },
+    {
+     "consumer": 6,
+     "prey": 1,
+     "mass": 90.94036456553299
+    },
+    {
+     "consumer": 4,
+     "prey": 1,
+     "mass": 72.75788751671232
+    },
+    {
+     "consumer": 2,
+     "prey": 1,
+     "mass": 72.64957656685156
+    },
+    {
+     "consumer": 4,
+     "prey": 4,
+     "mass": 17.33566248663474
+    }
+   ],
+   "massDrift": -2.6229177560058563e-13,
+   "pairs": [
+    {
+     "a": "Protocellula primordialis#1",
+     "b": "Protocellula viridis#2",
+     "aOnB": {
+      "diff": 0.05815862009732347,
+      "se": 0.003879797281203007,
+      "diffSink": -0.011373373755743876,
+      "seSink": 0.003642891178173788,
+      "sign": "0",
+      "nB": 1149
+     },
+     "bOnA": {
+      "diff": 0.5307269773074842,
+      "se": 0.0068067752604792755,
+      "diffSink": 0.010204974514729449,
+      "seSink": 0.005850355447386005,
+      "sign": "~",
+      "nB": 2947
+     },
+     "flowAeatsB": 7.265489459204416,
+     "flowBeatsA": 44.76696703075025,
+     "label": "indeterminada",
+     "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+    },
+    {
+     "a": "Protocellula primordialis#1",
+     "b": "Protocellula cryophilus#4",
+     "aOnB": {
+      "diff": -0.010222488194051652,
+      "se": 0.017026237371384558,
+      "diffSink": -0.016263367957344968,
+      "seSink": 0.012366259696007468,
+      "sign": "0",
+      "nB": 242
+     },
+     "bOnA": {
+      "diff": 0.04215606757910966,
+      "se": 0.005407875094208405,
+      "diffSink": -0.002142056767545088,
+      "seSink": 0.009985933909495946,
+      "sign": "0",
+      "nB": 2947
+     },
+     "flowAeatsB": 0,
+     "flowBeatsA": 56.44648746909084,
+     "label": "sem efeito detectável",
+     "evidence": "nenhuma remoção alterou o outro grupo além do ruído"
+    },
+    {
+     "a": "Protocellula viridis#2",
+     "b": "Protocellula cryophilus#4",
+     "aOnB": {
+      "diff": 0.2564560929342878,
+      "se": 0.018504812120219337,
+      "diffSink": 0.027388890965776423,
+      "seSink": 0.01983812121432622,
+      "sign": "~",
+      "nB": 242
+     },
+     "bOnA": {
+      "diff": 0.009776634579122631,
+      "se": 0.0043645468862008215,
+      "diffSink": -0.0046734028416328234,
+      "seSink": 0.00505898075148454,
+      "sign": "0",
+      "nB": 1149
+     },
+     "flowAeatsB": 0.5174471214519051,
+     "flowBeatsA": 0,
+     "label": "indeterminada",
+     "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+    }
+   ]
+  }
+ ]
+}

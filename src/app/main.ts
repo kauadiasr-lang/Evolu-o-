@@ -752,13 +752,13 @@ $('b-new').onclick = () => ($('dlg-new') as HTMLDialogElement).showModal();
 $('new-ok').onclick = () => {
   seed = Math.max(1, Number(($('in-seed') as HTMLInputElement).value) | 0);
   const [w, h] = ($('in-size') as HTMLSelectElement).value.split('x').map(Number);
-  startWorld(seed, w, h, Number(($('in-pop') as HTMLInputElement).value), ($('in-stage3') as HTMLInputElement).checked);
+  startWorld(seed, w, h, Number(($('in-pop') as HTMLInputElement).value), ($('in-stage3') as HTMLInputElement).checked, ($('in-ecology') as HTMLInputElement).checked);
 };
-function startWorld(sd: number, w = 96, h = 60, pop = 700, stage3 = true) {
+function startWorld(sd: number, w = 96, h = 60, pop = 700, stage3 = true, ecology = false) {
   seed = sd;
   m0 = 0; selectedSp = 0; inspected = null; inspectedPlant = null; selectedLin = 0; compareSp = 0; compareMode = false; renderer.terrain = null; spRenderKey = ''; lastAutoChron = 0;
   renderer.species = 0; renderer.selectedOrganism = null;
-  client.send({ t: 'init', cfg: { seed: sd, width: w, height: h, initialPopulation: pop, maxOrganisms: w * h * 9, stage3, maxPlants: Math.round(w * h * 2.2) } });
+  client.send({ t: 'init', cfg: { seed: sd, width: w, height: h, initialPopulation: pop, maxOrganisms: w * h * 9, stage3, ecology, maxPlants: Math.round(w * h * 2.2) } });
   client.send({ t: 'speed', speed: paused ? 0 : speed });
   setLayer(layer === 'species' ? 'ocean' : layer);
 }

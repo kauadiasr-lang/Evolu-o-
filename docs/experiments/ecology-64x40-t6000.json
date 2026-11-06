@@ -1,0 +1,251 @@
+{
+ "w": 64,
+ "h": 40,
+ "stage3": false,
+ "ticks": 6000,
+ "horizon": 250,
+ "reps": 3,
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6
+ ],
+ "results": [
+  {
+   "seed": 1,
+   "speciesAlive": 1,
+   "groups": [
+    "Protocellula primordialis#1"
+   ],
+   "flows": {
+    "nutriente": 50031,
+    "detrito": 114695.6,
+    "presa": 3302.2,
+    "planta": 0,
+    "exsudato": 48317.3
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 381.76282023444674
+    }
+   ],
+   "massDrift": 3.763034328585491e-13,
+   "pairs": []
+  },
+  {
+   "seed": 2,
+   "speciesAlive": 1,
+   "groups": [
+    "Protocellula primordialis#1"
+   ],
+   "flows": {
+    "nutriente": 66150.4,
+    "detrito": 168957.3,
+    "presa": 5162,
+    "planta": 0,
+    "exsudato": 115406.7
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 864.2673012547749
+    }
+   ],
+   "massDrift": 4.320099833421408e-13,
+   "pairs": []
+  },
+  {
+   "seed": 3,
+   "speciesAlive": 1,
+   "groups": [
+    "Protocellula primordialis#1"
+   ],
+   "flows": {
+    "nutriente": 85410.8,
+    "detrito": 213470.6,
+    "presa": 16893.6,
+    "planta": 0,
+    "exsudato": 114577.8
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 1249.5499505601429
+    }
+   ],
+   "massDrift": 3.953053757348766e-13,
+   "pairs": []
+  },
+  {
+   "seed": 4,
+   "speciesAlive": 1,
+   "groups": [
+    "Protocellula primordialis#1"
+   ],
+   "flows": {
+    "nutriente": 100401.9,
+    "detrito": 266529.1,
+    "presa": 19347.7,
+    "planta": 0,
+    "exsudato": 168488.5
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 1903.2042462889904
+    }
+   ],
+   "massDrift": 4.2762491960145013e-13,
+   "pairs": []
+  },
+  {
+   "seed": 5,
+   "speciesAlive": 2,
+   "groups": [
+    "Protocellula primordialis#1",
+    "Protocellula viridis#2"
+   ],
+   "flows": {
+    "nutriente": 41212.1,
+    "detrito": 97059.3,
+    "presa": 22.6,
+    "planta": 0,
+    "exsudato": 53641.6
+   },
+   "foodWeb": [
+    {
+     "consumer": 1,
+     "prey": 1,
+     "mass": 0.8423963618672675
+    }
+   ],
+   "massDrift": 4.391560131417854e-13,
+   "pairs": [
+    {
+     "a": "Protocellula primordialis#1",
+     "b": "Protocellula viridis#2",
+     "aOnB": {
+      "diff": 0.4021472986304878,
+      "se": 0.0017559098189947977,
+      "diffSink": 0.03446570701500158,
+      "seSink": 0.0015388412570986152,
+      "sign": "~",
+      "nB": 2564
+     },
+     "bOnA": {
+      "diff": 0.29498630245164803,
+      "se": 0.0032874784530207983,
+      "diffSink": 0.006240495183320628,
+      "seSink": 0.002215458639325399,
+      "sign": "~",
+      "nB": 5047
+     },
+     "flowAeatsB": 0,
+     "flowBeatsA": 0,
+     "label": "indeterminada",
+     "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+    }
+   ]
+  },
+  {
+   "seed": 6,
+   "speciesAlive": 3,
+   "groups": [
+    "Protocellula primordialis#1",
+    "Protocellula viridis#2",
+    "Lumrocella viridis#3"
+   ],
+   "flows": {
+    "nutriente": 27975.8,
+    "detrito": 62514.8,
+    "presa": 34.1,
+    "planta": 0,
+    "exsudato": 28339.9
+   },
+   "foodWeb": [],
+   "massDrift": 3.8702247755801577e-13,
+   "pairs": [
+    {
+     "a": "Protocellula primordialis#1",
+     "b": "Protocellula viridis#2",
+     "aOnB": {
+      "diff": 0.20841048282029778,
+      "se": 0.004221974527681507,
+      "diffSink": 0.008999284806758948,
+      "seSink": 0.003689666533568345,
+      "sign": "~",
+      "nB": 1591
+     },
+     "bOnA": {
+      "diff": 0.13798854896338567,
+      "se": 0.0039123949534271805,
+      "diffSink": 0.005656611379558273,
+      "seSink": 0.0028959389137530283,
+      "sign": "~",
+      "nB": 3841
+     },
+     "flowAeatsB": 0,
+     "flowBeatsA": 0,
+     "label": "indeterminada",
+     "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+    },
+    {
+     "a": "Protocellula primordialis#1",
+     "b": "Lumrocella viridis#3",
+     "aOnB": {
+      "diff": 4.1147558078764295,
+      "se": 0.06851244680239081,
+      "diffSink": 1.1302783819276891,
+      "seSink": 0.05750188532152883,
+      "sign": "-",
+      "nB": 30
+     },
+     "bOnA": {
+      "diff": 0.0031045428182959883,
+      "se": 0.004014719931196137,
+      "diffSink": -0.005207164818287639,
+      "seSink": 0.0016734980686106003,
+      "sign": "0",
+      "nB": 3841
+     },
+     "flowAeatsB": 0,
+     "flowBeatsA": 0,
+     "label": "amensalismo (efeito líquido)",
+     "evidence": "A prejudica B; B não afeta A além do ruído"
+    },
+    {
+     "a": "Protocellula viridis#2",
+     "b": "Lumrocella viridis#3",
+     "aOnB": {
+      "diff": 0.20247902239437865,
+      "se": 0.12803848343193228,
+      "diffSink": 0.1669100731343196,
+      "seSink": 0.07900698129763052,
+      "sign": "~",
+      "nB": 30
+     },
+     "bOnA": {
+      "diff": 0.002429084198103823,
+      "se": 0.00584001235608858,
+      "diffSink": -0.003504607584772515,
+      "seSink": 0.0021089778513504543,
+      "sign": "0",
+      "nB": 1591
+     },
+     "flowAeatsB": 0,
+     "flowBeatsA": 0,
+     "label": "indeterminada",
+     "evidence": "o sinal do efeito depende do destino da matéria removida (viés de matéria); não é possível separar interação de realocação de matéria"
+    }
+   ]
+  }
+ ]
+}
